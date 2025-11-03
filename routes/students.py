@@ -123,7 +123,7 @@ def create_student():
         guardian_phone = data.get('guardianPhone', '')
         student_phone = data.get('phoneNumber', '')
         
-        # Prioritize guardian phone for login
+        # Prioritize guardian phone for login (allow multiple students with same phone)
         if guardian_phone:
             # Validate guardian phone number
             phone = validate_phone(guardian_phone)
@@ -132,74 +132,31 @@ def create_student():
                 print(f"ERROR: {error_msg}")
                 return error_response(error_msg, 400)
             
-            # Check if guardian phone already exists
-            existing_user = User.query.filter_by(phoneNumber=phone).first()
-            if existing_user and existing_user.role == UserRole.STUDENT:
-                # Student already exists - add them to the new batch if provided
-                print(f"INFO: Student with phone {phone} already exists. Enrolling in batch if provided.")
-                batch_id = data.get('batchId')
-                if batch_id:
-                    batch = Batch.query.get(batch_id)
-                    if batch:
-                        # Check if already in this batch
-                        if batch not in existing_user.batches:
-                            existing_user.batches.append(batch)
-                            db.session.commit()
-                            
-                            # Prepare response
-                            student_data = serialize_user(existing_user)
-                            student_data['firstName'] = student_data.get('first_name', '')
-                            student_data['lastName'] = student_data.get('last_name', '')
-                            student_data['phoneNumber'] = student_data.get('phoneNumber', '')
-                            student_data['message'] = 'Student already exists - enrolled in new batch'
-                            
-                            return success_response('Student enrolled in batch successfully', student_data, 200)
-                        else:
-                            return error_response('Student is already enrolled in this batch', 409)
-                    else:
-                        return error_response('Batch not found', 404)
-                else:
-                    return error_response('Student with this guardian phone already exists. Please provide a batch to enroll them in.', 409)
-            elif existing_user and existing_user.role != UserRole.STUDENT:
-                # Phone belongs to a teacher or admin
-                error_msg = 'This phone number is already registered as a teacher/admin account'
-                print(f"ERROR: {error_msg} - Phone: {phone}")
-                return error_response(error_msg, 409)
+            # Allow multiple students with same guardian phone (siblings)
+            # Check if phone belongs to a teacher/admin (NOT allowed)
+            existing_users = User.query.filter_by(phoneNumber=phone).all()
+            for existing_user in existing_users:
+                if existing_user.role != UserRole.STUDENT:
+                    error_msg = 'This phone number is already registered as a teacher/admin account'
+                    print(f"ERROR: {error_msg} - Phone: {phone}")
+                    return error_response(error_msg, 409)
+            
+            # Multiple students with same phone are OK (siblings sharing parent phone)
+            print(f"INFO: Creating student with phone {phone}. {len(existing_users)} students already exist with this phone.")
+            
         elif student_phone:
             # Fallback to student phone if no guardian phone
             phone = validate_phone(student_phone)
             if not phone:
                 return error_response('Invalid phone number format', 400)
             
-            existing_user = User.query.filter_by(phoneNumber=phone).first()
-            if existing_user and existing_user.role == UserRole.STUDENT:
-                # Student already exists - add them to the new batch if provided
-                print(f"INFO: Student with phone {phone} already exists. Enrolling in batch if provided.")
-                batch_id = data.get('batchId')
-                if batch_id:
-                    batch = Batch.query.get(batch_id)
-                    if batch:
-                        # Check if already in this batch
-                        if batch not in existing_user.batches:
-                            existing_user.batches.append(batch)
-                            db.session.commit()
-                            
-                            # Prepare response
-                            student_data = serialize_user(existing_user)
-                            student_data['firstName'] = student_data.get('first_name', '')
-                            student_data['lastName'] = student_data.get('last_name', '')
-                            student_data['phoneNumber'] = student_data.get('phoneNumber', '')
-                            student_data['message'] = 'Student already exists - enrolled in new batch'
-                            
-                            return success_response('Student enrolled in batch successfully', student_data, 200)
-                        else:
-                            return error_response('Student is already enrolled in this batch', 409)
-                    else:
-                        return error_response('Batch not found', 404)
-                else:
-                    return error_response('Student with this phone already exists. Please provide a batch to enroll them in.', 409)
-            elif existing_user and existing_user.role != UserRole.STUDENT:
-                return error_response('This phone number is already registered as a teacher/admin account', 409)
+            # Allow multiple students with same phone (siblings)
+            existing_users = User.query.filter_by(phoneNumber=phone).all()
+            for existing_user in existing_users:
+                if existing_user.role != UserRole.STUDENT:
+                    return error_response('This phone number is already registered as a teacher/admin account', 409)
+                    
+            print(f"INFO: Creating student with phone {phone}. {len(existing_users)} students already exist with this phone.")
         else:
             # Generate a unique placeholder phone number if no phone provided
             import random
