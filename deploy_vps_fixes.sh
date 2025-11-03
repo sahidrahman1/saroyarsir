@@ -46,6 +46,13 @@ echo "→ Pulling latest code..."
 git pull origin main
 
 echo ""
+echo "→ Fixing phone number unique constraint..."
+python3 fix_phone_unique_constraint.py
+if [ $? -ne 0 ]; then
+    echo "WARNING: Phone constraint fix failed, but continuing..."
+fi
+
+echo ""
 echo "→ Running database fix script..."
 python3 fix_vps_database.py
 
