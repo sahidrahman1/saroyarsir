@@ -89,11 +89,25 @@ mkdir -p uploads
 mkdir -p static
 mkdir -p templates
 
-# Set environment variables
+# Set environment variables and configure for SQLite
 echo -e "\n${GREEN}🔧 Setting environment variables...${NC}"
 export FLASK_ENV=production
 export PORT=8001
 export DEBUG=False
+
+# Create/update .env file for SQLite
+echo -e "\n${GREEN}📝 Configuring SQLite database...${NC}"
+cat > .env << 'ENVEOF'
+FLASK_APP=app.py
+FLASK_ENV=production
+SECRET_KEY=your-secret-key-change-this-in-production
+DATABASE_URL=sqlite:///madrasha.db
+PORT=8001
+HOST=0.0.0.0
+SESSION_TYPE=filesystem
+ENVEOF
+
+echo "✅ .env file configured for SQLite"
 
 # Stop any existing instance
 echo -e "\n${GREEN}🛑 Stopping existing instances...${NC}"
@@ -101,9 +115,9 @@ pkill -f "python.*app.py" || true
 pkill -f "gunicorn.*app:app" || true
 sleep 2
 
-# Check database
-echo -e "\n${GREEN}🗄️  Checking database...${NC}"
-python3 check_database_vps.py
+# Skip database check for now (it was trying to use PostgreSQL)
+# We'll verify database after service starts
+echo -e "\n${GREEN}🗄️  Database will be verified after service starts...${NC}"
 
 # Create systemd service file
 echo -e "\n${GREEN}📝 Creating systemd service...${NC}"

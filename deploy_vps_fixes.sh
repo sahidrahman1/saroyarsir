@@ -46,6 +46,19 @@ echo "→ Pulling latest code..."
 git pull origin main
 
 echo ""
+echo "→ Configuring SQLite database..."
+cat > .env << 'EOF'
+FLASK_APP=app.py
+FLASK_ENV=production
+SECRET_KEY=your-secret-key-change-this-in-production
+DATABASE_URL=sqlite:///madrasha.db
+PORT=8001
+HOST=0.0.0.0
+SESSION_TYPE=filesystem
+EOF
+echo "✓ .env configured for SQLite"
+
+echo ""
 echo "→ Fixing phone number unique constraint..."
 python3 fix_phone_unique_constraint.py
 if [ $? -ne 0 ]; then
