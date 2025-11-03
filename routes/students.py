@@ -43,6 +43,8 @@ def get_students():
         batch_id = request.args.get('batch_id', type=int)
         search = request.args.get('search', '').strip()
         
+        print(f"GET /api/students - batch_id={batch_id}, search='{search}'")
+        
         query = User.query.filter(User.role == UserRole.STUDENT, User.is_active == True, User.is_archived == False)
         
         # Filter by batch
@@ -61,6 +63,22 @@ def get_students():
             query = query.filter(search_filter)
         
         students = query.order_by(User.first_name, User.last_name).all()
+        
+        print(f"Found {len(students)} students (active, non-archived)")
+        
+        # Group by phone number to identify siblings
+        phone_groups = {}
+        for student in students:
+            phone = student.phoneNumber
+            if phone not in phone_groups:
+                phone_groups[phone] = []
+            phone_groups[phone].append(student)
+        
+        # Show siblings
+        for phone, group in phone_groups.items():
+            if len(group) > 1:
+                names = ', '.join([f"{s.first_name} {s.last_name}" for s in group])
+                print(f"  Siblings with phone {phone}: {names}")
         
         students_data = []
         for student in students:
@@ -192,7 +210,8 @@ def create_student():
             mother_name=data.get('motherName', '').strip() if data.get('motherName') else None,
             emergency_contact=data.get('emergencyContact', '').strip() if data.get('emergencyContact') else None,
             admission_date=datetime.strptime(str(data['admissionDate']).strip(), '%Y-%m-%d').date() if data.get('admissionDate') and str(data['admissionDate']).strip() else None,
-            is_active=data.get('isActive', True)
+            is_active=data.get('isActive', True),
+            is_archived=False  # Explicitly set to False to ensure it's not archived
         )
         
         # Generate password as last 4 digits of parent phone
@@ -203,14 +222,32 @@ def create_student():
         db.session.add(student)
         db.session.flush()  # Get the student ID
         
+        print(f"INFO: Student created with ID {student.id}")
+        print(f"      Name: {student.first_name} {student.last_name}")
+        print(f"      Phone: {student.phoneNumber}")
+        print(f"      Guardian Phone: {student.guardian_phone}")
+        
         # Assign to batch if provided
         batch_id = data.get('batchId')
         if batch_id:
             batch = Batch.query.get(batch_id)
             if batch:
                 student.batches.append(batch)
+                print(f"      Assigned to batch: {batch.name} (ID: {batch.id})")
+            else:
+                print(f"      WARNING: Batch {batch_id} not found")
+        else:
+            print(f"      No batch assigned")
         
         db.session.commit()
+        
+        # Verify student was saved
+        saved_student = User.query.get(student.id)
+        if saved_student:
+            print(f"SUCCESS: Student {student.id} verified in database")
+            print(f"         is_active={saved_student.is_active}, is_archived={saved_student.is_archived}")
+        else:
+            print(f"ERROR: Student {student.id} NOT found after commit!")
         
         # Prepare response data
         student_data = serialize_user(student)
