@@ -1545,10 +1545,19 @@ def delete_monthly_exam(exam_id):
     """Delete a monthly exam period and all associated data"""
     try:
         current_user = get_current_user()
-        monthly_exam = db.session.get(MonthlyExam, exam_id)
+        print(f"DELETE request for monthly exam {exam_id} by user {current_user.id}")
+        
+        # Use query instead of session.get for better debugging
+        monthly_exam = MonthlyExam.query.filter_by(id=exam_id).first()
         
         if not monthly_exam:
+            print(f"ERROR: Monthly exam {exam_id} not found in database")
+            # Check if it ever existed
+            all_exams = MonthlyExam.query.all()
+            print(f"Available monthly exams: {[e.id for e in all_exams]}")
             return error_response('Monthly exam not found. It may have been already deleted.', 404)
+        
+        print(f"Found monthly exam: {monthly_exam.title} (ID: {monthly_exam.id})")
         
         # Check if user has permission
         if current_user.role not in [UserRole.SUPER_USER, UserRole.TEACHER]:
@@ -1556,24 +1565,31 @@ def delete_monthly_exam(exam_id):
         
         # Check if any marks have been entered
         marks_count = MonthlyMark.query.filter_by(monthly_exam_id=exam_id).count()
+        print(f"Marks count for exam {exam_id}: {marks_count}")
         if marks_count > 0:
             return error_response('Cannot delete exam period. Marks have been entered. Please delete all marks first.', 400)
         
         # Delete associated data
         # Delete rankings
-        MonthlyRanking.query.filter_by(monthly_exam_id=exam_id).delete()
+        rankings_deleted = MonthlyRanking.query.filter_by(monthly_exam_id=exam_id).delete()
+        print(f"Deleted {rankings_deleted} rankings")
         
         # Delete individual exams
-        IndividualExam.query.filter_by(monthly_exam_id=exam_id).delete()
+        individual_deleted = IndividualExam.query.filter_by(monthly_exam_id=exam_id).delete()
+        print(f"Deleted {individual_deleted} individual exams")
         
         # Delete the monthly exam
         db.session.delete(monthly_exam)
         db.session.commit()
         
+        print(f"Successfully deleted monthly exam {exam_id}")
         return success_response('Monthly exam period deleted successfully')
         
     except Exception as e:
         db.session.rollback()
+        print(f"ERROR deleting monthly exam {exam_id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         current_app.logger.error(f'Error deleting monthly exam: {str(e)}')
         return error_response(f'Failed to delete monthly exam: {str(e)}', 500)
 

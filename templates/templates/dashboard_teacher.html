@@ -430,6 +430,8 @@ function teacherDashboard() {
                 return;
             }
             
+            console.log('Deleting monthly exam:', monthlyExam.id, monthlyExam.title);
+            
             try {
                 const response = await fetch(`/api/monthly-exams/${monthlyExam.id}`, {
                     method: 'DELETE',
@@ -438,13 +440,17 @@ function teacherDashboard() {
                     }
                 });
                 
+                console.log('Delete response status:', response.status);
+                
                 if (response.ok) {
+                    console.log('Monthly exam deleted successfully');
                     await this.loadMonthlyExams();
                     this.selectedMonthlyExam = null;
                     this.monthlyExamTab = 'overview';
                     utils.showAlert('Monthly exam period deleted successfully!', 'success');
                 } else {
                     const error = await response.json();
+                    console.error('Delete failed:', error);
                     utils.showAlert('Failed to delete monthly exam: ' + (error.error || 'Unknown error'), 'error');
                 }
             } catch (error) {
