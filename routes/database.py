@@ -4,10 +4,10 @@ Provides endpoints to check database status for VPS deployment
 """
 from flask import Blueprint, jsonify
 from models import (
-    db, User, Batch, Subject, Exam, Question, QuestionOption,
-    Attendance, Fee, FeePayment, Result, Message, SmsLog,
+    db, User, Batch, Exam, Question, ExamSubmission, ExamAnswer,
+    Attendance, Fee, SmsLog, MonthlyResult, Session,
     MonthlyExam, IndividualExam, MonthlyMark, MonthlyRanking,
-    SmsTemplate, Document
+    SmsTemplate, Document, QuestionBank
 )
 from datetime import datetime
 
@@ -32,22 +32,22 @@ def check_database():
         tables = [
             ('users', User),
             ('batches', Batch),
-            ('subjects', Subject),
             ('exams', Exam),
             ('questions', Question),
-            ('question_options', QuestionOption),
+            ('exam_submissions', ExamSubmission),
+            ('exam_answers', ExamAnswer),
             ('attendance', Attendance),
             ('fees', Fee),
-            ('fee_payments', FeePayment),
-            ('results', Result),
-            ('messages', Message),
             ('sms_logs', SmsLog),
+            ('monthly_results', MonthlyResult),
+            ('sessions', Session),
             ('monthly_exams', MonthlyExam),
             ('individual_exams', IndividualExam),
             ('monthly_marks', MonthlyMark),
             ('monthly_rankings', MonthlyRanking),
             ('sms_templates', SmsTemplate),
-            ('documents', Document)
+            ('documents', Document),
+            ('question_bank', QuestionBank)
         ]
         
         total_records = 0
@@ -152,8 +152,8 @@ def database_stats():
             },
             'academic': {
                 'batches': Batch.query.count(),
-                'subjects': Subject.query.count(),
                 'exams': Exam.query.count(),
+                'questions': Question.query.count(),
                 'monthly_exams': MonthlyExam.query.count(),
                 'individual_exams': IndividualExam.query.count(),
             },
@@ -162,7 +162,6 @@ def database_stats():
             },
             'fees': {
                 'total_fees': Fee.query.count(),
-                'payments': FeePayment.query.count(),
             },
             'sms': {
                 'templates': SmsTemplate.query.count(),
