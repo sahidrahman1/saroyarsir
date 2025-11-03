@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Student Nursing Center{% endblock %}
+
+{% block extra_head %}
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+{% endblock %}
+
+{% block content %}
+<div x-data="loginForm()" class="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 relative overflow-hidden">
+    <!-- Background Effects -->
+    <div class="absolute inset-0 opacity-20">
+        <div class="absolute top-10 left-10 w-20 h-20 bg-yellow-400/15 rounded-full blur-xl"></div>
+        <div class="absolute top-32 right-16 w-16 h-16 bg-white/10 rounded-full blur-lg"></div>
+        <div class="absolute bottom-20 left-20 w-24 h-24 bg-yellow-500/12 rounded-full blur-xl"></div>
+        <div class="absolute bottom-40 right-8 w-12 h-12 bg-blue-400/15 rounded-full blur-lg"></div>
+    </div>
+
+    <div class="relative z-10 flex flex-col items-center justify-center min-h-screen p-4">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="flex items-center justify-center mb-6">
+                <div class="bg-gradient-to-r from-yellow-500 to-amber-500 p-6 rounded-3xl shadow-xl">
+                    <i class="fas fa-mobile-alt text-blue-900 text-4xl"></i>
+                </div>
+            </div>
+            <h1 class="text-4xl font-bold text-white mb-3">
+                Student Nursing Center
+            </h1>
+            <p class="text-yellow-300 text-xl font-semibold">
+                by Golam Sarowar Sir
+            </p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="w-full max-w-md bg-white/95 backdrop-blur-xl border-2 border-white/20 shadow-2xl rounded-3xl">
+            <div class="text-center space-y-4 p-6 pb-6">
+                <h2 class="text-3xl text-blue-900 font-bold">Login</h2>
+                <p class="text-blue-700 text-lg font-medium">
+                    Enter your phone number and password to access your account
+                </p>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <form @submit.prevent="handleLogin()" class="space-y-4">
+                    <div>
+                        <label class="text-blue-900 text-base font-semibold block mb-2">Phone Number</label>
+                        <input
+                            type="text"
+                            x-model="formData.phoneNumber"
+                            placeholder="For students: use parent phone number"
+                            required
+                            class="flex h-14 w-full rounded-xl border-2 border-blue-200 bg-white px-4 py-3 text-lg text-blue-900 placeholder:text-blue-400 focus:border-yellow-500 focus:ring-4 focus:ring-yellow-200 focus:outline-none shadow-md transition-all"
+                            autocomplete="tel"
+                        />
+                        <p class="text-blue-600 text-sm mt-1">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Students: Use your parent's phone number to login
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="text-blue-900 text-base font-semibold block mb-2">Password</label>
+                        <div class="relative">
+                            <input
+                                :type="showPassword ? 'text' : 'password'"
+                                x-model="formData.password"
+                                placeholder="Enter your password"
+                                required
+                                class="flex h-14 w-full rounded-xl border-2 border-blue-200 bg-white px-4 py-3 pr-14 text-lg text-blue-900 placeholder:text-blue-400 focus:border-yellow-500 focus:ring-4 focus:ring-yellow-200 focus:outline-none shadow-md transition-all"
+                                autocomplete="current-password"
+                            />
+                            <button
+                                type="button"
+                                @click="showPassword = !showPassword"
+                                class="absolute inset-y-0 right-0 pr-4 flex items-center"
+                            >
+                                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="text-blue-600 text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div x-show="loginError" x-transition class="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
+                        <p class="text-red-400 text-sm text-center" x-text="loginError"></p>
+                    </div>
+
+                    <button
+                        type="submit"
+                        :disabled="isLoading"
+                        class="w-full h-16 bg-gradient-to-r from-blue-900 to-blue-800 text-white hover:from-blue-800 hover:to-blue-700 font-bold text-xl rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+                    >
+                        <span x-show="!isLoading">Login</span>
+                        <span x-show="isLoading" class="flex items-center justify-center gap-2">
+                            <div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                            Logging in...
+                        </span>
+                    </button>
+                </form>
+
+                <div class="text-center">
+                    <a href="/" class="text-sm text-blue-600 hover:text-blue-800 transition-colors font-medium">
+                        ← Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loginForm() {
+    return {
+        formData: {
+            phoneNumber: '',
+            password: ''
+        },
+        showPassword: false,
+        isLoading: false,
+        loginError: '',
+
+        async handleLogin() {
+            console.log('=== LOGIN FORM SUBMIT ===');
+            console.log('Login data:', this.formData);
+
+            this.loginError = '';
+
+            if (!this.formData.phoneNumber || !this.formData.password) {
+                this.loginError = 'Please fill in both phone number and password';
+                return;
+            }
+
+            console.log('🔍 Login attempt for phone:', this.formData.phoneNumber);
+            this.isLoading = true;
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(this.formData)
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log('🎉 Login successful, user role:', data?.user?.role);
+                    
+                    // Reset form
+                    this.formData = { phoneNumber: '', password: '' };
+                    this.loginError = '';
+
+                    // Show success message
+                    showToast('Login successful! Redirecting...', 'success');
+                    
+                    // Redirect to dashboard
+                    console.log('Redirecting to dashboard...');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                } else {
+                    console.error('❌ Login error:', data);
+                    const message = data?.message || 'Invalid phone number or password. Please try again.';
+                    this.loginError = message.replace(/^(401: |400: |500: )/g, '');
+                }
+            } catch (error) {
+                console.error('❌ Login error:', error);
+                this.loginError = 'Network error. Please check your connection and try again.';
+            } finally {
+                this.isLoading = false;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

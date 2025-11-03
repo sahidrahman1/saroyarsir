@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Super Admin SMS Management - SmartGardenHub{% endblock %}
+
+{% block extra_head %}
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+{% endblock %}
+
+{% block content %}
+<div x-data="smsManagement()" class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-gradient-to-r from-red-600 to-pink-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-crown text-white text-lg"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h1 class="text-2xl font-bold text-gray-900">SMS Management</h1>
+                        <p class="text-sm text-gray-600">Super Admin Control Panel</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-600">
+                        <span class="font-medium">Welcome:</span>
+                        <span class="text-red-600 font-bold">{{ user.firstName }} {{ user.lastName }}</span>
+                    </div>
+                    <button @click="logout()" 
+                            class="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-md transition-colors duration-200">
+                        <i class="fas fa-sign-out-alt mr-2"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <!-- SMS Credit Management -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">Add SMS Credits to Teachers</h2>
+            
+            <!-- Add Credits Form -->
+            <div class="bg-blue-50 rounded-lg p-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Select Teacher</label>
+                        <select x-model="selectedTeacher" class="w-full px-3 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- Select Teacher --</option>
+                            <template x-for="teacher in teachers" :key="teacher.id">
+                                <option :value="teacher.id" x-text="`${teacher.name} (${teacher.phoneNumber}) - Balance: ${teacher.smsCount}`"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">SMS Credits to Add</label>
+                        <input type="number" x-model="creditsToAdd" min="1" max="10000" 
+                               class="w-full px-3 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Enter credits">
+                    </div>
+                    <div class="flex items-end">
+                        <button @click="addSMSCredits()" :disabled="!selectedTeacher || !creditsToAdd || adding"
+                                class="w-full px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium">
+                            <span x-show="!adding">Add Credits</span>
+                            <span x-show="adding">Adding...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teachers List -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teacher</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone Number</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SMS Balance</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quick Add</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <template x-for="teacher in teachers" :key="teacher.id">
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                            <i class="fas fa-chalkboard-teacher text-blue-600"></i>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900" x-text="teacher.name"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="teacher.phoneNumber"></td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                                          :class="teacher.smsCount > 50 ? 'bg-green-100 text-green-800' : teacher.smsCount > 10 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'">
+                                        <span x-text="teacher.smsCount"></span> Credits
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                    <button @click="quickAddCredits(teacher.id, 100)" 
+                                            class="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors">
+                                        +100
+                                    </button>
+                                    <button @click="quickAddCredits(teacher.id, 500)" 
+                                            class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors">
+                                        +500
+                                    </button>
+                                    <button @click="quickAddCredits(teacher.id, 1000)" 
+                                            class="px-3 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors">
+                                        +1000
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div x-show="teachers.length === 0" class="text-center py-12">
+                <i class="fas fa-users text-gray-400 text-5xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Teachers Found</h3>
+                <p class="text-gray-500">Teachers will appear here once they are added to the system.</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+function smsManagement() {
+    return {
+        user: {{ user | tojson | safe }},
+        teachers: [],
+        selectedTeacher: '',
+        creditsToAdd: '',
+        adding: false,
+
+        init() {
+            this.loadTeachers();
+        },
+
+        async loadTeachers() {
+            try {
+                const response = await fetch('/api/users/teachers', {
+                    credentials: 'same-origin'
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    this.teachers = data.data || [];
+                } else {
+                    console.error('Failed to load teachers:', response.status);
+                    this.teachers = [];
+                }
+            } catch (error) {
+                console.error('Failed to load teachers:', error);
+                this.teachers = [];
+            }
+        },
+
+        async addSMSCredits() {
+            if (!this.selectedTeacher || !this.creditsToAdd) return;
+            
+            this.adding = true;
+            try {
+                const response = await fetch('/api/sms/add-credits', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        teacher_id: this.selectedTeacher,
+                        credits: parseInt(this.creditsToAdd),
+                        memo: 'Added by Super Admin'
+                    })
+                });
+
+                if (response.ok) {
+                    alert(`Successfully added ${this.creditsToAdd} SMS credits!`);
+                    this.selectedTeacher = '';
+                    this.creditsToAdd = '';
+                    await this.loadTeachers();
+                } else {
+                    const error = await response.json();
+                    alert(`Failed to add credits: ${error.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Failed to add SMS credits:', error);
+                alert('Failed to add SMS credits. Please try again.');
+            } finally {
+                this.adding = false;
+            }
+        },
+
+        async quickAddCredits(teacherId, credits) {
+            try {
+                const response = await fetch('/api/sms/add-credits', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        teacher_id: teacherId,
+                        credits: credits,
+                        memo: `Quick add ${credits} credits by Super Admin`
+                    })
+                });
+
+                if (response.ok) {
+                    alert(`Successfully added ${credits} SMS credits!`);
+                    await this.loadTeachers();
+                } else {
+                    const error = await response.json();
+                    alert(`Failed to add credits: ${error.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Failed to add SMS credits:', error);
+                alert('Failed to add SMS credits. Please try again.');
+            }
+        },
+
+        async logout() {
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+                if (response.ok) {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = '/login';
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

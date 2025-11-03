@@ -1,0 +1,419 @@
+<!-- Full Screen Mobile & PC Responsive Attendance Management -->
+<div x-data="attendanceManager()" x-init="init()" class="min-h-screen bg-gray-50">
+    <!-- Full Screen Header -->
+    <div class="bg-white shadow-sm border-b sticky top-0 z-40">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Attendance Management</h1>
+                    <p class="text-sm sm:text-base text-gray-600">Mark attendance and view history</p>
+                </div>
+                <!-- SMS Count Display -->
+                <div class="flex items-center justify-between sm:justify-end space-x-4">
+                    <div class="bg-blue-50 px-4 py-2 rounded-lg border">
+                        <span class="text-sm font-medium text-blue-800">SMS Balance: </span>
+                        <span class="text-sm font-bold text-blue-600" x-text="smsBalance + ' SMS'"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Tab Navigation -->
+        <div class="bg-white rounded-lg shadow-sm border mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="flex space-x-0" aria-label="Tabs">
+                    <button 
+                        @click="activeTab = 'mark'"
+                        :class="activeTab === 'mark' ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm sm:text-base transition-colors"
+                    >
+                        <i class="fas fa-calendar-check mr-2"></i>
+                        Mark Attendance
+                    </button>
+                    <button 
+                        @click="activeTab = 'monthly'"
+                        :class="activeTab === 'monthly' ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm sm:text-base transition-colors"
+                    >
+                        <i class="fas fa-calendar-alt mr-2"></i>
+                        Monthly Sheet
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Mark Attendance Tab -->
+            <div x-show="activeTab === 'mark'" class="p-6">
+                <!-- Batch & Date Selection -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl mb-6 border border-blue-100">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-cog mr-3 text-blue-600"></i>Select Batch & Date
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Batch</label>
+                            <select 
+                                x-model="selectedBatchId" 
+                                @change="loadStudentsForAttendance()"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm"
+                            >
+                                <option value="">Select a batch...</option>
+                                <template x-for="batch in batches" :key="batch.id">
+                                    <option :value="batch.id" x-text="batch.name + ' - ' + (batch.description || '')"></option>
+                                </template>
+                            </select>
+                            <div x-show="batches.length === 0" class="text-sm text-gray-500 mt-1">
+                                <i class="fas fa-info-circle mr-1"></i>No batches available
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                            <input 
+                                type="date" 
+                                x-model="selectedDate"
+                                @change="loadStudentsForAttendance()"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm"
+                                :max="getBangladeshDate()"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Live Statistics -->
+                    <div x-show="attendanceStudents.length > 0" class="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div class="bg-white p-4 rounded-lg text-center shadow-sm border">
+                            <div class="text-2xl font-bold text-blue-600" x-text="attendanceStudents.length"></div>
+                            <div class="text-sm text-gray-600">Total Students</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg text-center shadow-sm border">
+                            <div class="text-2xl font-bold text-green-600" x-text="presentCount"></div>
+                            <div class="text-sm text-gray-600">Present</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg text-center shadow-sm border">
+                            <div class="text-2xl font-bold text-red-600" x-text="absentCount"></div>
+                            <div class="text-sm text-gray-600">Absent</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg text-center shadow-sm border">
+                            <div class="text-2xl font-bold text-purple-600" x-text="attendancePercentage + '%'"></div>
+                            <div class="text-sm text-gray-600">Attendance Rate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Display -->
+                <div x-show="errorMessage" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span x-text="errorMessage"></span>
+                    </div>
+                </div>
+
+                <!-- No Batch Selected State -->
+                <div x-show="!selectedBatchId" class="text-center py-16">
+                    <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-calendar-check text-3xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-xl font-medium text-gray-900 mb-2">Select a Batch</h3>
+                    <p class="text-gray-600">Choose a batch from the dropdown above to start marking attendance</p>
+                </div>
+
+                <!-- Loading State -->
+                <div x-show="loading" class="text-center py-16">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                    <p class="text-gray-600 text-lg">Loading students...</p>
+                </div>
+
+                <!-- Students List -->
+                <div x-show="selectedBatchId && attendanceStudents.length > 0 && !loading" class="space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+                        <h3 class="text-xl font-semibold text-gray-900">
+                            Students (<span x-text="attendanceStudents.length"></span>)
+                        </h3>
+                        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                            <button 
+                                @click="markAllPresent()" 
+                                class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                            >
+                                <i class="fas fa-check-double mr-2"></i>Mark All Present
+                            </button>
+                            <button 
+                                @click="markAllAbsent()" 
+                                class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors font-medium"
+                            >
+                                <i class="fas fa-times-circle mr-2"></i>Mark All Absent
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Student Cards Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <template x-for="student in attendanceStudents" :key="student.id">
+                            <div class="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                                <!-- Student Info -->
+                                <div class="flex items-start justify-between mb-4">
+                                    <div class="flex items-center flex-1 min-w-0">
+                                        <!-- Roll Number Badge -->
+                                        <div x-show="student.roll_number" class="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center flex-shrink-0 mr-2 border-2 border-blue-200">
+                                            <span class="text-white text-sm font-bold" x-text="student.roll_number"></span>
+                                        </div>
+                                        <!-- Student Initial (if no roll number) -->
+                                        <div x-show="!student.roll_number" class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span class="text-white text-lg font-bold" x-text="getStudentInitial(student)"></span>
+                                        </div>
+                                        <div class="ml-3 min-w-0 flex-1">
+                                            <div class="text-sm font-semibold text-gray-900 truncate" x-text="student.full_name || student.first_name + ' ' + student.last_name || 'Unknown Student'"></div>
+                                            <div class="text-xs text-gray-500" x-text="student.phoneNumber || student.phone || 'No phone'"></div>
+                                            <div class="text-xs text-blue-500" x-show="student.guardian_phone" x-text="'Guardian: ' + (student.guardian_phone || '')"></div>
+                                        </div>
+                                    </div>
+                                    <!-- Status Badge -->
+                                    <div class="flex-shrink-0">
+                                        <span 
+                                            :class="student.status === 'present' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'"
+                                            class="inline-flex px-3 py-1 text-xs font-semibold rounded-full border"
+                                            x-text="student.status === 'present' ? 'Present' : 'Absent'"
+                                        ></span>
+                                    </div>
+                                </div>
+
+                                <!-- Attendance Toggle Buttons -->
+                                <div class="flex space-x-3">
+                                    <button 
+                                        @click="markAttendance(student, 'present')"
+                                        :class="student.status === 'present' ? 'bg-green-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-green-50 hover:text-green-700'"
+                                        class="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 border"
+                                        :disabled="saving"
+                                    >
+                                        <i class="fas fa-check mr-2"></i>Present
+                                    </button>
+                                    <button 
+                                        @click="markAttendance(student, 'absent')"
+                                        :class="student.status === 'absent' ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-700'"
+                                        class="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 border"
+                                        :disabled="saving"
+                                    >
+                                        <i class="fas fa-times mr-2"></i>Absent
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- SMS Option & Save Section -->
+                    <div class="bg-white border rounded-xl p-6 shadow-sm">
+                        <div class="flex items-center mb-4">
+                            <input 
+                                type="checkbox" 
+                                id="sendSmsOption" 
+                                x-model="sendSmsToParents"
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            >
+                            <label for="sendSmsOption" class="ml-3 text-sm font-medium text-gray-700">
+                                <i class="fas fa-sms mr-2 text-blue-600"></i>
+                                Send SMS notifications to parents
+                                <span class="text-gray-500">(<span x-text="presentCount + absentCount"></span> SMS will be sent)</span>
+                            </label>
+                        </div>
+                        
+                        <div x-show="sendSmsToParents" class="text-sm text-blue-600 mb-4 bg-blue-50 p-3 rounded-lg">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <span x-text="(presentCount + absentCount) + ' SMS will be sent. Available balance: ' + smsBalance + ' SMS'"></span>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <button 
+                                @click="saveAttendance(false)"
+                                :disabled="saving || attendanceStudents.length === 0"
+                                class="bg-blue-600 text-white px-6 py-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                            >
+                                <i :class="saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'" class="mr-2"></i>
+                                <span x-text="saving ? 'Saving...' : 'Save Attendance'"></span>
+                            </button>
+                            <button 
+                                x-show="sendSmsToParents"
+                                @click="saveAttendance(true)"
+                                :disabled="saving || smsBalance < (presentCount + absentCount) || attendanceStudents.length === 0"
+                                class="bg-green-600 text-white px-6 py-4 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                            >
+                                <i :class="saving ? 'fas fa-spinner fa-spin' : 'fas fa-paper-plane'" class="mr-2"></i>
+                                <span x-text="saving ? 'Saving...' : 'Save & Send SMS'"></span>
+                            </button>
+                            <button 
+                                @click="saveAttendanceAndSendSmsToAbsentOnly()"
+                                :disabled="saving || absentCount === 0 || smsBalance < absentCount"
+                                class="bg-orange-600 text-white px-6 py-4 rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                            >
+                                <i :class="saving ? 'fas fa-spinner fa-spin' : 'fas fa-exclamation-triangle'" class="mr-2"></i>
+                                <span x-text="saving ? 'Saving...' : 'SMS Absent Only (' + absentCount + ')'"></span>
+                            </button>
+                        </div>
+                        
+                        <!-- Balance Warning for Absent SMS -->
+                        <div x-show="absentCount > 0" class="text-sm mt-3 p-3 rounded-lg" :class="smsBalance >= absentCount ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'">
+                            <i :class="smsBalance >= absentCount ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'" class="mr-2"></i>
+                            <span x-text="'Send SMS to ' + absentCount + ' absent student(s). Balance: ' + smsBalance + ' SMS'"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- No Students State -->
+                <div x-show="selectedBatchId && attendanceStudents.length === 0 && !loading" class="text-center py-16">
+                    <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user-slash text-3xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-xl font-medium text-gray-900 mb-2">No Students Found</h3>
+                    <p class="text-gray-600">This batch doesn't have any active students enrolled.</p>
+                    <button 
+                        @click="refreshStudents()" 
+                        class="mt-4 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        <i class="fas fa-refresh mr-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Monthly Sheet Tab -->
+            <div x-show="activeTab === 'monthly'" class="p-6">
+                <!-- Error Display -->
+                <div x-show="errorMessage && activeTab === 'monthly'" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span x-text="errorMessage"></span>
+                    </div>
+                </div>
+
+                <!-- Monthly Sheet Controls -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl mb-6 border border-blue-100">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-calendar-alt mr-3 text-blue-600"></i>Select Batch & Month
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Batch</label>
+                            <select 
+                                x-model="monthlyBatchId" 
+                                @change="loadMonthlyAttendance()"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm"
+                            >
+                                <option value="">Select a batch...</option>
+                                <template x-for="batch in batches" :key="batch.id">
+                                    <option :value="batch.id" x-text="batch.name + ' - ' + (batch.description || '')"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Month</label>
+                            <select 
+                                x-model="selectedMonth"
+                                @change="loadMonthlyAttendance()"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm"
+                            >
+                                <option value="1">January</option>
+                                <option value="2">February</option>
+                                <option value="3">March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                                <option value="6">June</option>
+                                <option value="7">July</option>
+                                <option value="8">August</option>
+                                <option value="9">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                            <select 
+                                x-model="selectedYear"
+                                @change="loadMonthlyAttendance()"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm"
+                            >
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Attendance Sheet -->
+                <div x-show="monthlyBatchId" class="bg-white border rounded-xl overflow-hidden shadow-sm">
+                    <div class="p-6 border-b bg-gray-50">
+                        <h3 class="text-xl font-semibold text-gray-900" x-text="`Monthly Attendance Sheet - ${getMonthName(selectedMonth)} ${selectedYear}`"></h3>
+                    </div>
+                    
+                    <!-- Mobile: Vertical Cards View -->
+                    <div class="block sm:hidden p-6 space-y-6" x-show="monthlyData.students && monthlyData.students.length > 0">
+                        <template x-for="student in monthlyData.students" :key="student.id">
+                            <div class="border rounded-lg p-4 bg-gray-50">
+                                <div class="font-medium text-gray-900 mb-3" x-text="student.name"></div>
+                                <div class="grid grid-cols-7 gap-1">
+                                    <template x-for="day in monthlyData.days" :key="day">
+                                        <div class="text-center">
+                                            <div class="text-xs text-gray-500 mb-1" x-text="day"></div>
+                                            <div 
+                                                class="w-8 h-8 rounded-full text-xs flex items-center justify-center font-medium"
+                                                :class="getAttendanceClass(student.attendance && student.attendance[day])"
+                                                x-text="getAttendanceSymbol(student.attendance && student.attendance[day])"
+                                            ></div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Desktop: Table View -->
+                    <div class="hidden sm:block overflow-x-auto">
+                        <table class="min-w-full" x-show="monthlyData.students && monthlyData.students.length > 0">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="sticky left-0 bg-gray-50 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                                        Student Name
+                                    </th>
+                                    <template x-for="day in monthlyData.days" :key="day">
+                                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-10" x-text="day"></th>
+                                    </template>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <template x-for="student in monthlyData.students" :key="student.id">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="sticky left-0 bg-white px-6 py-4 text-sm font-medium text-gray-900 border-r" x-text="student.name"></td>
+                                        <template x-for="day in monthlyData.days" :key="day">
+                                            <td class="px-3 py-4 text-center text-sm">
+                                                <span 
+                                                    class="inline-block w-8 h-8 rounded-full text-xs font-medium flex items-center justify-center"
+                                                    :class="getAttendanceClass(student.attendance && student.attendance[day])"
+                                                    x-text="getAttendanceSymbol(student.attendance && student.attendance[day])"
+                                                ></span>
+                                            </td>
+                                        </template>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- No Data State -->
+                    <div x-show="monthlyBatchId && (!monthlyData.students || monthlyData.students.length === 0)" class="text-center py-16">
+                        <i class="fas fa-calendar-times text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600">No attendance data found for this month</p>
+                    </div>
+                </div>
+
+                <!-- No Batch Selected -->
+                <div x-show="!monthlyBatchId" class="text-center py-16">
+                    <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-calendar-alt text-3xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-xl font-medium text-gray-900 mb-2">Select a Batch</h3>
+                    <p class="text-gray-600">Choose a batch from the dropdown above to view monthly attendance</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

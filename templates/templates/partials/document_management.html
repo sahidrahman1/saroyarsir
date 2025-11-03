@@ -1,0 +1,503 @@
+<!-- Document Management - Full Page with Sidebar -->
+<div class="flex h-full w-full bg-gray-50">
+    <!-- Sidebar - Hidden on mobile, visible on desktop -->
+    <div class="hidden lg:block w-64 bg-white border-r border-gray-200 overflow-y-auto">
+        <div class="p-4">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">📚 Categories</h3>
+            <nav class="space-y-2">
+                <button onclick="filterByCategory('all')" 
+                        class="w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 category-btn active bg-blue-100"
+                        data-category="all">
+                    <div class="flex items-center justify-between">
+                        <span class="font-medium text-gray-700">📋 All Documents</span>
+                        <span id="count-all" class="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">0</span>
+                    </div>
+                </button>
+                <button onclick="filterByCategory('online-books')" 
+                        class="w-full text-left px-4 py-3 rounded-lg hover:bg-green-50 category-btn"
+                        data-category="online-books">
+                    <div class="flex items-center justify-between">
+                        <span class="font-medium text-gray-700">📖 Study Materials</span>
+                        <span id="count-books" class="text-xs bg-green-600 text-white px-2 py-1 rounded-full">0</span>
+                    </div>
+                </button>
+                <button onclick="filterByCategory('question-bank')" 
+                        class="w-full text-left px-4 py-3 rounded-lg hover:bg-purple-50 category-btn"
+                        data-category="question-bank">
+                    <div class="flex items-center justify-between">
+                        <span class="font-medium text-gray-700">❓ Question Banks</span>
+                        <span id="count-questions" class="text-xs bg-purple-600 text-white px-2 py-1 rounded-full">0</span>
+                    </div>
+                </button>
+                <button onclick="filterByCategory('homework')" 
+                        class="w-full text-left px-4 py-3 rounded-lg hover:bg-orange-50 category-btn"
+                        data-category="homework">
+                    <div class="flex items-center justify-between">
+                        <span class="font-medium text-gray-700">📝 Homework</span>
+                        <span id="count-homework" class="text-xs bg-orange-600 text-white px-2 py-1 rounded-full">0</span>
+                    </div>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Header -->
+        <div class="bg-white border-b border-gray-200 px-4 lg:px-6 py-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                    <h2 class="text-xl lg:text-2xl font-bold text-gray-800" id="doc-header-title">📚 Online Resources</h2>
+                    <p class="text-xs lg:text-sm text-gray-600 mt-1">Upload PDFs for students - textbooks, notes, and study materials</p>
+                </div>
+                <button onclick="showUploadModal()" 
+                        class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-lg flex items-center justify-center shadow-lg transition">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Upload PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Category Filter -->
+        <div class="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
+            <select onchange="filterByCategory(this.value)" 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="all">📋 All Documents</option>
+                <option value="online-books">📖 Study Materials</option>
+                <option value="question-bank">❓ Question Banks</option>
+                <option value="homework">📝 Homework</option>
+            </select>
+        </div>
+
+        <!-- Search Filters -->
+        <div class="bg-white border-b border-gray-200 px-4 lg:px-6 py-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <input type="text" id="filterClass" placeholder="🔍 Search by class..." 
+                       class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       onkeyup="applyFilters()">
+                <input type="text" id="filterSubject" placeholder="🔍 Search by subject..." 
+                       class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       onkeyup="applyFilters()">
+                <input type="text" id="filterChapter" placeholder="🔍 Search by chapter..." 
+                       class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       onkeyup="applyFilters()">
+            </div>
+        </div>
+
+        <!-- Documents List -->
+        <div class="flex-1 overflow-auto px-4 lg:px-6 py-4">
+            <div id="documentsContainer">
+                <div class="flex items-center justify-center h-64">
+                    <div class="text-center">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <p class="text-gray-600">Loading documents...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-gray-200 px-4 lg:px-6 py-4 rounded-t-xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg lg:text-xl font-bold text-gray-800">📤 Upload PDF Document</h3>
+                <button onclick="closeUploadModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <form id="uploadForm" class="p-4 lg:p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Class *</label>
+                <select id="className" required 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">-- Select Class --</option>
+                    <option value="Class 6">Class 6</option>
+                    <option value="Class 7">Class 7</option>
+                    <option value="Class 8">Class 8</option>
+                    <option value="Class 9">Class 9</option>
+                    <option value="Class 10">Class 10</option>
+                    <option value="HSC Science">HSC Science</option>
+                    <option value="HSC Commerce">HSC Commerce</option>
+                    <option value="HSC Arts">HSC Arts</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Subject *</label>
+                <select id="subjectName" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">-- Select Subject --</option>
+                    <option value="General Math">General Math</option>
+                    <option value="General Science">General Science</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="Higher Mathematics">Higher Mathematics</option>
+                    <option value="Physics">Physics</option>
+                    <option value="Chemistry">Chemistry</option>
+                    <option value="Biology">Biology</option>
+                    <option value="English">English</option>
+                    <option value="Bengali">Bengali</option>
+                    <option value="Bangla">Bangla</option>
+                    <option value="ICT">ICT</option>
+                    <option value="History">History</option>
+                    <option value="Geography">Geography</option>
+                    <option value="Computer Science">Computer Science</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Chapter Name *</label>
+                <input type="text" id="chapterName" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                       placeholder="e.g., Chapter 1: Introduction">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Document Type *</label>
+                <select id="documentType" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="online-books">📖 Study Material</option>
+                    <option value="question-bank">❓ Question Bank</option>
+                    <option value="homework">📝 Homework</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">This helps students filter documents easily</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+                <textarea id="description" rows="2"
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          placeholder="Brief description..."></textarea>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">PDF File * (Max 60 MB)</label>
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 lg:p-6 text-center hover:border-blue-500 transition cursor-pointer"
+                     onclick="document.getElementById('pdfFile').click()">
+                    <input type="file" id="pdfFile" accept=".pdf,application/pdf" class="hidden" onchange="handleFileSelection(event)">
+                    <svg class="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/>
+                    </svg>
+                    <p class="text-sm font-medium text-gray-700">Click to select PDF file</p>
+                    <p class="text-xs text-gray-500 mt-1">PDF only • Maximum 60 MB</p>
+                </div>
+                <div id="fileInfo" class="mt-2 hidden">
+                    <div class="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-3 lg:px-4 py-2">
+                        <span id="fileName" class="text-xs lg:text-sm text-blue-900 truncate"></span>
+                        <button type="button" onclick="clearFile()" class="text-blue-600 hover:text-blue-800 ml-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="fileError" class="mt-2 text-sm text-red-600 hidden"></div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
+                <button type="button" onclick="closeUploadModal()" 
+                        class="w-full sm:w-auto px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit" id="uploadBtn"
+                        class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span id="uploadBtnText">Upload PDF</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+var selectedFile = null;
+var allDocuments = [];
+var currentCategory = 'all';
+
+function showUploadModal() {
+    document.getElementById('uploadModal').classList.remove('hidden');
+    document.getElementById('uploadForm').reset();
+    selectedFile = null;
+    document.getElementById('fileInfo').classList.add('hidden');
+    document.getElementById('fileError').classList.add('hidden');
+}
+
+function closeUploadModal() {
+    document.getElementById('uploadModal').classList.add('hidden');
+}
+
+function handleFileSelection(event) {
+    var file = event.target.files[0];
+    var fileInfo = document.getElementById('fileInfo');
+    var fileError = document.getElementById('fileError');
+    var fileName = document.getElementById('fileName');
+    
+    if (!file) return;
+    
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        fileError.textContent = '⚠️ Only PDF files are allowed!';
+        fileError.classList.remove('hidden');
+        fileInfo.classList.add('hidden');
+        selectedFile = null;
+        event.target.value = '';
+        return;
+    }
+    
+    var maxSize = 60 * 1024 * 1024;
+    if (file.size > maxSize) {
+        var sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        fileError.textContent = '⚠️ File too large (' + sizeMB + ' MB). Maximum is 60 MB.';
+        fileError.classList.remove('hidden');
+        fileInfo.classList.add('hidden');
+        selectedFile = null;
+        event.target.value = '';
+        return;
+    }
+    
+    selectedFile = file;
+    var sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    fileName.textContent = file.name + ' (' + sizeMB + ' MB)';
+    fileInfo.classList.remove('hidden');
+    fileError.classList.add('hidden');
+}
+
+function clearFile() {
+    selectedFile = null;
+    document.getElementById('pdfFile').value = '';
+    document.getElementById('fileInfo').classList.add('hidden');
+}
+
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!selectedFile) {
+        alert('Please select a PDF file');
+        return;
+    }
+    
+    var uploadBtn = document.getElementById('uploadBtn');
+    var uploadBtnText = document.getElementById('uploadBtnText');
+    
+    var formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('class_name', document.getElementById('className').value);
+    formData.append('book_name', document.getElementById('subjectName').value);
+    formData.append('chapter_name', document.getElementById('chapterName').value);
+    
+    // Add category tag from documentType selector
+    var documentType = document.getElementById('documentType').value;
+    var description = document.getElementById('description').value;
+    formData.append('description', description + ' [' + documentType + ']');
+    
+    uploadBtn.disabled = true;
+    uploadBtnText.textContent = 'Uploading...';
+    
+    fetch('/api/documents/upload-noauth', {
+        method: 'POST',
+        body: formData
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.success) {
+            alert('✅ PDF uploaded successfully!');
+            closeUploadModal();
+            loadDocuments();
+        } else {
+            alert('❌ Upload failed: ' + (data.message || 'Unknown error'));
+        }
+        uploadBtn.disabled = false;
+        uploadBtnText.textContent = 'Upload PDF';
+    })
+    .catch(function(error) {
+        console.error('Upload error:', error);
+        alert('❌ Upload failed: ' + error.message);
+        uploadBtn.disabled = false;
+        uploadBtnText.textContent = 'Upload PDF';
+    });
+});
+
+function loadDocuments() {
+    var container = document.getElementById('documentsContainer');
+    
+    fetch('/api/documents/?include_inactive=true')
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (data.success && data.data && data.data.documents) {
+                allDocuments = data.data.documents;
+                updateCategoryCounts();
+                applyFilters();
+            } else {
+                throw new Error('Invalid response format');
+            }
+        })
+        .catch(function(error) {
+            console.error('Error loading documents:', error);
+            container.innerHTML = '<div class="text-center py-12"><svg class="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><p class="text-red-600 font-medium mb-2">Error loading documents</p><p class="text-gray-600 text-sm mb-4">' + error.message + '</p><button onclick="loadDocuments()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Retry</button></div>';
+        });
+}
+
+function updateCategoryCounts() {
+    var books = 0;
+    var questions = 0;
+    var homework = 0;
+    
+    for (var i = 0; i < allDocuments.length; i++) {
+        if (allDocuments[i].description) {
+            if (allDocuments[i].description.indexOf('[online-books]') !== -1) {
+                books++;
+            } else if (allDocuments[i].description.indexOf('[question-bank]') !== -1) {
+                questions++;
+            } else if (allDocuments[i].description.indexOf('[homework]') !== -1) {
+                homework++;
+            }
+        }
+    }
+    
+    document.getElementById('count-all').textContent = allDocuments.length;
+    document.getElementById('count-books').textContent = books;
+    document.getElementById('count-questions').textContent = questions;
+    document.getElementById('count-homework').textContent = homework;
+}
+
+function filterByCategory(category) {
+    currentCategory = category;
+    
+    var buttons = document.querySelectorAll('.category-btn');
+    for (var i = 0; i < buttons.length; i++) {
+        buttons[i].classList.remove('active', 'bg-blue-100', 'bg-green-100', 'bg-purple-100', 'bg-orange-100');
+        if (buttons[i].dataset.category === category) {
+            buttons[i].classList.add('active');
+            if (category === 'all') buttons[i].classList.add('bg-blue-100');
+            if (category === 'online-books') buttons[i].classList.add('bg-green-100');
+            if (category === 'question-bank') buttons[i].classList.add('bg-purple-100');
+            if (category === 'homework') buttons[i].classList.add('bg-orange-100');
+        }
+    }
+    
+    applyFilters();
+}
+
+function applyFilters() {
+    var classFilter = document.getElementById('filterClass').value.toLowerCase();
+    var subjectFilter = document.getElementById('filterSubject').value.toLowerCase();
+    var chapterFilter = document.getElementById('filterChapter').value.toLowerCase();
+    
+    var filtered = [];
+    for (var i = 0; i < allDocuments.length; i++) {
+        var doc = allDocuments[i];
+        
+        if (currentCategory !== 'all') {
+            if (!doc.description || doc.description.indexOf('[' + currentCategory + ']') === -1) {
+                continue;
+            }
+        }
+        
+        var matchClass = !classFilter || doc.class_name.toLowerCase().indexOf(classFilter) !== -1;
+        var matchSubject = !subjectFilter || doc.book_name.toLowerCase().indexOf(subjectFilter) !== -1;
+        var matchChapter = !chapterFilter || doc.chapter_name.toLowerCase().indexOf(chapterFilter) !== -1;
+        
+        if (matchClass && matchSubject && matchChapter) {
+            filtered.push(doc);
+        }
+    }
+    
+    renderDocuments(filtered);
+}
+
+function renderDocuments(documents) {
+    var container = document.getElementById('documentsContainer');
+    
+    if (documents.length === 0) {
+        container.innerHTML = '<div class="text-center py-12"><svg class="w-20 h-20 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p class="text-gray-600 font-medium mb-2">No documents found</p><p class="text-gray-500 text-sm mb-4">Upload your first PDF to get started</p><button onclick="showUploadModal()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Upload PDF</button></div>';
+        return;
+    }
+    
+    var mobileHTML = '<div class="block lg:hidden space-y-3">';
+    var desktopHTML = '<div class="hidden lg:block bg-white rounded-lg shadow overflow-hidden"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Chapter</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">PDF File</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Uploaded</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th></tr></thead><tbody class="bg-white divide-y divide-gray-200">';
+    
+    for (var i = 0; i < documents.length; i++) {
+        var doc = documents[i];
+        
+        // Determine category and badge
+        var categoryBadge = '<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">📋 Document</span>';
+        if (doc.description) {
+            if (doc.description.indexOf('[online-books]') !== -1) {
+                categoryBadge = '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">📖 Study Material</span>';
+            } else if (doc.description.indexOf('[question-bank]') !== -1) {
+                categoryBadge = '<span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">❓ Question Bank</span>';
+            } else if (doc.description.indexOf('[homework]') !== -1) {
+                categoryBadge = '<span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">� Homework</span>';
+            }
+        }
+        
+        var uploadDate = new Date(doc.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        var uploadTime = new Date(doc.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        
+        mobileHTML += '<div class="bg-white rounded-lg shadow p-4 border border-gray-200"><div class="flex items-start justify-between mb-3"><div class="flex-1">' + categoryBadge + '<h3 class="font-medium text-gray-900 mt-2">' + doc.chapter_name + '</h3><p class="text-sm text-gray-600 mt-1">' + doc.class_name + ' • ' + doc.book_name + '</p></div></div><div class="flex items-center text-xs text-gray-500 mb-3"><svg class="w-4 h-4 text-red-500 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg><span class="truncate">' + doc.file_name + '</span><span class="ml-2">(' + doc.file_size_mb + ' MB)</span></div><div class="flex items-center justify-between text-xs text-gray-500 mb-3"><span>📅 ' + uploadDate + '</span><span>⬇️ ' + doc.download_count + ' downloads</span></div><div class="flex gap-2"><a href="/api/documents/' + doc.id + '/download" class="flex-1 text-center px-3 py-2 bg-blue-100 text-blue-700 rounded text-sm font-medium hover:bg-blue-200">Download</a><button onclick="deletePDF(' + doc.id + ')" class="px-3 py-2 bg-red-100 text-red-700 rounded text-sm font-medium hover:bg-red-200">Delete</button></div></div>';
+        
+        desktopHTML += '<tr class="hover:bg-gray-50"><td class="px-4 py-3 whitespace-nowrap">' + categoryBadge + '</td><td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">' + doc.class_name + '</td><td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">' + doc.book_name + '</td><td class="px-4 py-3 text-sm text-gray-600">' + doc.chapter_name + '</td><td class="px-4 py-3"><div class="flex items-center"><svg class="w-4 h-4 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg><span class="text-sm text-gray-900">' + doc.file_name + '</span></div></td><td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">' + doc.file_size_mb + ' MB</td><td class="px-4 py-3 whitespace-nowrap"><div class="text-sm text-gray-900">' + uploadDate + '</div><div class="text-xs text-gray-500">' + uploadTime + '</div></td><td class="px-4 py-3 whitespace-nowrap text-sm space-x-2"><a href="/api/documents/' + doc.id + '/download" class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>Download</a><button onclick="deletePDF(' + doc.id + ')" class="inline-flex items-center px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>Delete</button></td></tr>';
+    }
+    
+    mobileHTML += '</div>';
+    desktopHTML += '</tbody></table></div>';
+    
+    container.innerHTML = mobileHTML + desktopHTML;
+}
+
+function deletePDF(id) {
+    if (!confirm('Are you sure you want to delete this PDF?')) {
+        return;
+    }
+    
+    fetch('/api/documents/' + id + '/delete-noauth', {
+        method: 'POST'
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.success) {
+            alert('✅ PDF deleted successfully');
+            loadDocuments();
+        } else {
+            alert('❌ Delete failed: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(function(error) {
+        console.error('Delete error:', error);
+        alert('❌ Delete failed: ' + error.message);
+    });
+}
+
+// Auto-detect which section is active and filter accordingly
+setTimeout(function() { 
+    loadDocuments();
+    
+    // Check if we're in a specific section
+    if (window.Alpine && window.Alpine.store) {
+        var checkSection = setInterval(function() {
+            var dashboardData = document.querySelector('[x-data]');
+            if (dashboardData && dashboardData.__x) {
+                var activeSection = dashboardData.__x.$data.activeSection;
+                
+                // Update header based on section
+                var headerTitle = document.getElementById('doc-header-title');
+                if (activeSection === 'online-resources') {
+                    if (headerTitle) headerTitle.textContent = '📖 Online Resources';
+                    filterByCategory('all');
+                }
+                
+                clearInterval(checkSection);
+            }
+        }, 100);
+        
+        // Stop checking after 2 seconds
+        setTimeout(function() { clearInterval(checkSection); }, 2000);
+    }
+}, 100);
+</script>

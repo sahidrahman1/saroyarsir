@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard - GS Student Nursing Center{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Mobile sidebar overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 z-40 md:hidden hidden" onclick="toggleSidebar()">
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-75"></div>
+    </div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform -translate-x-full transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0">
+        <div class="flex items-center justify-center h-16 bg-indigo-600">
+            <div class="flex items-center">
+                <i class="fas fa-graduation-cap text-white text-2xl mr-2"></i>
+                <h1 class="text-white text-xl font-bold">Student Portal</h1>
+            </div>
+        </div>
+        
+        <nav class="mt-5 px-2">
+            <a href="#dashboard" data-section="dashboard" class="nav-item group flex items-center px-2 py-2 text-base font-medium rounded-md text-indigo-600 bg-indigo-100 mb-1">
+                <i class="fas fa-home mr-3 h-6 w-6"></i>
+                Dashboard
+            </a>
+            <a href="#monthly-exams" data-section="monthly-exams" class="nav-item group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 mb-1">
+                <i class="fas fa-clipboard-list mr-3 h-6 w-6"></i>
+                Monthly Exams
+            </a>
+            <a href="#online-resources" data-section="online-resources" class="nav-item group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 mb-1">
+                <i class="fas fa-book mr-3 h-6 w-6"></i>
+                Online Resources
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main content -->
+    <div class="md:pl-64 flex flex-col flex-1">
+        <!-- Top navigation -->
+        <div class="sticky top-0 z-10 flex justify-between items-center bg-white shadow-sm px-4 py-3">
+            <button type="button" id="sidebarToggle" class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100" onclick="toggleSidebar()">
+                <i class="fas fa-bars h-6 w-6"></i>
+            </button>
+            <div class="flex-1"></div>
+            <button onclick="window.location.href='/logout'" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
+                <i class="fas fa-sign-out-alt mr-2"></i>
+                Logout
+            </button>
+        </div>
+
+        <main class="flex-1 p-4 md:p-6">
+            <!-- Welcome Header -->
+            <div class="mb-6">
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Welcome, <span id="studentName">{{ user.first_name if user else 'Student' }}</span>!</h1>
+                <p class="mt-1 text-sm text-gray-600">Your Academic Dashboard</p>
+            </div>
+
+            <!-- Dashboard Section -->
+            <div id="dashboardSection" class="content-section">
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-6">
+                    <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 overflow-hidden shadow-lg rounded-lg text-white">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-clipboard-list text-3xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-indigo-100">Total Exams</p>
+                                    <p class="text-2xl font-bold" id="totalExams">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-green-500 to-green-600 overflow-hidden shadow-lg rounded-lg text-white">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-chart-line text-3xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-green-100">Average Score</p>
+                                    <p class="text-2xl font-bold" id="avgScore">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 overflow-hidden shadow-lg rounded-lg text-white">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-book text-3xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-blue-100">Resources</p>
+                                    <p class="text-2xl font-bold" id="totalResources">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white shadow-lg rounded-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">📚 Quick Access</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button onclick="showSection('monthly-exams')" class="p-6 border-2 border-indigo-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 hover:shadow-lg transition transform hover:scale-105">
+                            <i class="fas fa-clipboard-list text-4xl text-indigo-600 mb-3 block"></i>
+                            <p class="font-semibold text-gray-900">View My Exams</p>
+                            <p class="text-sm text-gray-500 mt-2">Check monthly exam results</p>
+                        </button>
+                        <button onclick="showSection('online-resources')" class="p-6 border-2 border-blue-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 hover:shadow-lg transition transform hover:scale-105">
+                            <i class="fas fa-book text-4xl text-blue-600 mb-3 block"></i>
+                            <p class="font-semibold text-gray-900">Study Materials</p>
+                            <p class="text-sm text-gray-500 mt-2">Download books & resources</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Exams Section -->
+            <div id="monthly-examsSection" class="content-section hidden">
+                {% include 'partials/student_monthly_exams.html' %}
+            </div>
+
+            <!-- Online Resources Section -->
+            <div id="online-resourcesSection" class="content-section hidden">
+                {% include 'partials/student_documents.html' %}
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+// Student Dashboard v2.0.1 - Build: 2025-10-22-19:30
+// Fixed: window.loadDocuments reference, improved initialization logic
+console.log('📚 Student Dashboard Script Loading v2.0.1');
+
+// Toggle sidebar for mobile
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('-translate-x-full');
+    overlay.classList.toggle('hidden');
+}
+
+// Navigation
+function showSection(sectionName) {
+    console.log('========================================');
+    console.log('🔄 SWITCHING TO SECTION:', sectionName);
+    console.log('========================================');
+    
+    // Hide all sections
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.add('hidden');
+    });
+    
+    // Show target section
+    const targetSection = document.getElementById(sectionName + 'Section');
+    if (!targetSection) {
+        console.error('❌ Section not found:', sectionName + 'Section');
+        return;
+    }
+    
+    targetSection.classList.remove('hidden');
+    console.log('✅ Section visible:', sectionName + 'Section');
+    
+    // Trigger section-specific loading
+    if (sectionName === 'monthly-exams') {
+        console.log('📊 Monthly Exams Section');
+        console.log('  - window.studentMonthlyExams exists?', !!window.studentMonthlyExams);
+        
+        if (window.studentMonthlyExams) {
+            console.log('  - userBatchId:', window.studentMonthlyExams.userBatchId);
+            console.log('  - currentUser:', window.studentMonthlyExams.currentUser);
+            
+            if (!window.studentMonthlyExams.userBatchId) {
+                console.log('  → Calling init()...');
+                try {
+                    window.studentMonthlyExams.init();
+                } catch (err) {
+                    console.error('❌ Error calling init():', err);
+                }
+            } else {
+                console.log('  ✓ Already initialized with batch:', window.studentMonthlyExams.userBatchId);
+            }
+        } else {
+            console.error('❌ window.studentMonthlyExams NOT FOUND!');
+            console.error('  → The partial may not have loaded');
+            console.error('  → Check: include partials/student_monthly_exams.html');
+        }
+    } 
+    else if (sectionName === 'online-resources') {
+        console.log('📚 Online Resources Section');
+        console.log('  - window.loadDocuments type:', typeof window.loadDocuments);
+        console.log('  - window.allDocuments:', window.allDocuments);
+        
+        if (typeof window.loadDocuments === 'function') {
+            if (!window.allDocuments || window.allDocuments.length === 0) {
+                console.log('  → Calling loadDocuments()...');
+                try {
+                    window.loadDocuments();
+                } catch (err) {
+                    console.error('❌ Error calling loadDocuments():', err);
+                }
+            } else {
+                console.log('  ✓ Already loaded:', window.allDocuments.length, 'documents');
+            }
+        } else {
+            console.error('❌ window.loadDocuments NOT FOUND!');
+            console.error('  → The partial may not have loaded');
+            console.error('  → Check: include partials/student_documents.html');
+        }
+    }
+    
+    // Update navigation styling
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('text-indigo-600', 'bg-indigo-100');
+        item.classList.add('text-gray-600');
+    });
+    
+    const activeNav = document.querySelector('[data-section="' + sectionName + '"]');
+    if (activeNav) {
+        activeNav.classList.remove('text-gray-600');
+        activeNav.classList.add('text-indigo-600', 'bg-indigo-100');
+    }
+    
+    // Close mobile sidebar
+    if (window.innerWidth < 768) {
+        toggleSidebar();
+    }
+    
+    console.log('========================================');
+}
+
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', function(e) {
+        e.preventDefault();
+        const section = this.getAttribute('data-section');
+        showSection(section);
+    });
+});
+
+function loadDashboardStats() {
+    fetch('/api/documents/?include_inactive=true')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data && data.data.documents) {
+                document.getElementById('totalResources').textContent = data.data.documents.length;
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== STUDENT DASHBOARD LOADED ===');
+    
+    // Wait for all partials to load
+    setTimeout(function() {
+        console.log('window.studentMonthlyExams available?', !!window.studentMonthlyExams);
+        console.log('window.loadDocuments available?', typeof window.loadDocuments === 'function');
+        console.log('window.allDocuments available?', !!window.allDocuments);
+        
+        if (!window.studentMonthlyExams) {
+            console.error('❌ studentMonthlyExams not loaded! Check if partial is included.');
+        }
+        if (typeof window.loadDocuments !== 'function') {
+            console.error('❌ loadDocuments not loaded! Check if partial is included.');
+        }
+        
+        // Verify sections exist
+        console.log('monthly-examsSection exists?', !!document.getElementById('monthly-examsSection'));
+        console.log('online-resourcesSection exists?', !!document.getElementById('online-resourcesSection'));
+    }, 100);
+    
+    loadDashboardStats();
+});
+</script>
+
+<style>
+.content-section {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.nav-item {
+    transition: all 0.2s ease;
+}
+</style>
+{% endblock %}

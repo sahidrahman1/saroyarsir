@@ -1,0 +1,650 @@
+<!-- Comprehensive Monthly Results with Individual Exam Columns -->
+<style>
+    /* Custom scrollbar styling for better visibility */
+    .results-table-container::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .results-table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 6px;
+    }
+    
+    .results-table-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 6px;
+    }
+    
+    .results-table-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* For Firefox */
+    .results-table-container {
+        scrollbar-width: auto;
+        scrollbar-color: #888 #f1f1f1;
+    }
+</style>
+
+<div x-data="comprehensiveResults()" x-init="init()">
+    
+    <!-- Header -->
+    <div class="bg-white shadow rounded-lg p-4 mb-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-xl font-bold" x-text="examData?.title || 'Monthly Exam Results'"></h2>
+                <p class="text-sm text-gray-600 mt-1" x-text="examData ? `${examData.month}/${examData.year} - ${examData.batch_name}` : ''"></p>
+                <p class="text-xs text-gray-500 mt-1" x-show="rankingsGenerated">
+                    <i class="fas fa-check-circle text-green-600"></i> Final rankings generated and saved
+                </p>
+                <p class="text-xs text-blue-600 mt-1" x-show="rankings.length > 0">
+                    <i class="fas fa-sort-numeric-down"></i> Sequential order by current rank (Roll = Current Rank)
+                </p>
+                
+                <!-- Feature on Homepage Checkbox - NOW ALWAYS ENABLED -->
+                <div class="mt-3 p-3 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
+                    <div class="flex items-center">
+                        <input type="checkbox" 
+                               id="showOnHomepage" 
+                               x-model="examData.show_on_homepage"
+                               @change="toggleHomepageFeature()"
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer">
+                        <label for="showOnHomepage" class="ml-2 text-sm font-medium text-gray-700 cursor-pointer">
+                            <i class="fas fa-star text-yellow-500"></i>
+                            <strong>Feature top 3 students on homepage</strong>
+                        </label>
+                    </div>
+                    <!-- Debug info -->
+                    <div class="text-xs mt-1 text-gray-600">
+                        Teacher: <span x-text="isTeacher ? 'Yes' : 'No'"></span> | 
+                        Rankings: <span x-text="rankingsGenerated ? 'Generated' : 'Not Generated'"></span> |
+                        Featured: <span x-text="examData?.show_on_homepage ? 'Yes' : 'No'"></span> |
+                        UserRole: <span x-text="window.userRole"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex space-x-2">
+                <button @click="downloadExcel()" 
+                        class="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center"
+                        x-show="rankings.length > 0">
+                    <i class="fas fa-download mr-2"></i>Download Excel
+                </button>
+                <button @click="regenerateRanking()" 
+                        class="px-3 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 flex items-center"
+                        x-show="rankings.length > 0 && rankingsGenerated">
+                    <i class="fas fa-sync-alt mr-2"></i>Re-generate Ranking
+                </button>
+                <button @click="showRollNumberModal = true" 
+                        class="px-3 py-2 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600"
+                        x-show="isTeacher && rankings.length > 0">
+                    <i class="fas fa-edit mr-2"></i>Assign Roll Numbers
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div x-show="loading" class="text-center py-12">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <p class="mt-2 text-gray-600">Loading comprehensive results...</p>
+    </div>
+
+    <!-- Success Message -->
+    <div x-show="!loading && successMessage" class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-600 mr-2"></i>
+            <p class="text-green-800" x-text="successMessage"></p>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div x-show="!loading && error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <p class="text-red-800" x-text="error"></p>
+    </div>
+
+    <!-- Results Table -->
+    <div x-show="!loading && !error && rankings.length > 0" class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="results-table-container overflow-x-auto overflow-y-auto" style="max-height: 600px; min-width: 100%;">
+            <table class="min-w-full divide-y divide-gray-200 table-auto" id="resultsTable" style="width: max-content;">
+                <thead class="bg-gray-50 sticky top-0 z-10">
+                    <tr>
+                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Rank</th>
+                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Prev Rank</th>
+                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Roll (Current)</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Student Name</th>
+                        
+                        <!-- Individual Exam Columns -->
+                        <template x-for="exam in individualExams" :key="exam.id">
+                            <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" x-text="exam.subject"></th>
+                        </template>
+                        
+                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Exam Total</th>
+                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Attendance</th>
+                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Total Obtained</th>
+                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Total Marks</th>
+                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">%</th>
+                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Grade</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <template x-for="(rank, index) in rankings" :key="rank.user_id">
+                        <tr :class="{'bg-yellow-50': rank.position === 1, 'bg-gray-50': rank.position === 2, 'bg-orange-50': rank.position === 3}">
+                            <!-- Current Rank -->
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <span class="text-sm font-bold" x-text="rank.position"></span>
+                                    <template x-if="rank.position === 1">
+                                        <span class="ml-1 text-xs">🥇</span>
+                                    </template>
+                                    <template x-if="rank.position === 2">
+                                        <span class="ml-1 text-xs">🥈</span>
+                                    </template>
+                                    <template x-if="rank.position === 3">
+                                        <span class="ml-1 text-xs">🥉</span>
+                                    </template>
+                                </div>
+                            </td>
+                            
+                            <!-- Previous Rank -->
+                            <td class="px-3 py-2 whitespace-nowrap text-center">
+                                <template x-if="rank.previous_position">
+                                    <span class="text-sm font-medium text-gray-700" x-text="rank.previous_position"></span>
+                                </template>
+                                <template x-if="!rank.previous_position">
+                                    <span class="text-gray-400 text-xs">-</span>
+                                </template>
+                            </td>
+                            
+                            <!-- Roll Number (Current Rank) -->
+                            <td class="px-3 py-2 whitespace-nowrap text-center">
+                                <span class="text-sm font-bold text-blue-600" x-text="rank.position"></span>
+                            </td>
+                            
+                            <!-- Student Name -->
+                            <td class="px-4 py-2 whitespace-nowrap">
+                                <div class="text-xs font-medium text-gray-900" x-text="rank.student_name"></div>
+                                <div class="text-xs text-gray-500" x-text="rank.student_phone"></div>
+                            </td>
+                            
+                            <!-- Individual Exam Marks -->
+                            <template x-for="exam in individualExams" :key="exam.id">
+                                <td class="px-3 py-2 whitespace-nowrap text-center text-xs">
+                                    <template x-if="rank.individual_marks && rank.individual_marks[exam.id]">
+                                        <div class="font-medium" x-text="(rank.individual_marks[exam.id].marks_obtained || 0) + '/' + (rank.individual_marks[exam.id].total_marks || 0)"></div>
+                                    </template>
+                                    <template x-if="!rank.individual_marks || !rank.individual_marks[exam.id]">
+                                        <span class="text-gray-400">0/0</span>
+                                    </template>
+                                </td>
+                            </template>
+                            
+                            <!-- Exam Total (without attendance) -->
+                            <td class="px-3 py-2 whitespace-nowrap text-center text-xs font-medium" x-text="rank.total_exam_marks || 0"></td>
+                            
+                            <!-- Attendance -->
+                            <td class="px-3 py-2 whitespace-nowrap text-center text-xs">
+                                <span x-text="(rank.attendance_marks || 0) + '/' + (rank.total_attendance_days || 0)"></span>
+                            </td>
+                            
+                            <!-- Total Obtained (Exam + Attendance) -->
+                            <td class="px-3 py-2 whitespace-nowrap text-center text-xs font-bold" x-text="rank.final_total || 0"></td>
+                            
+                            <!-- Total Marks (Exam + Max Attendance) -->
+                            <td class="px-3 py-2 whitespace-nowrap text-center text-xs font-medium" x-text="rank.total_possible || 0"></td>
+                            
+                            <!-- Percentage -->
+                            <td class="px-3 py-2 whitespace-nowrap text-center text-xs font-medium">
+                                <span x-text="rank.percentage.toFixed(1) + '%'"></span>
+                            </td>
+                            
+                            <!-- Grade -->
+                            <td class="px-3 py-2 whitespace-nowrap text-center">
+                                <span class="px-2 inline-flex text-xs leading-4 font-semibold rounded-full"
+                                      :class="{
+                                          'bg-green-100 text-green-800': rank.grade === 'A+' || rank.grade === 'A',
+                                          'bg-blue-100 text-blue-800': rank.grade === 'B' || rank.grade === 'B+',
+                                          'bg-yellow-100 text-yellow-800': rank.grade === 'C' || rank.grade === 'C+',
+                                          'bg-red-100 text-red-800': rank.grade === 'F'
+                                      }"
+                                      x-text="rank.grade">
+                                </span>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="!loading && !error && rankings.length === 0" class="text-center py-12 bg-white rounded-lg shadow">
+        <p class="text-gray-500">No results available for this monthly exam.</p>
+        <p class="text-sm text-gray-400 mt-2">Please generate rankings first.</p>
+    </div>
+
+    <!-- Roll Number Assignment Modal -->
+    <div x-show="showRollNumberModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" x-cloak>
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-3xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Assign Roll Numbers</h3>
+                
+                <div class="max-h-96 overflow-y-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Rank</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                                <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Roll Number</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <template x-for="rank in rankings" :key="rank.user_id">
+                                <tr>
+                                    <td class="px-4 py-2" x-text="rank.position"></td>
+                                    <td class="px-4 py-2" x-text="rank.student_name"></td>
+                                    <td class="px-4 py-2 text-center">
+                                        <input type="text" 
+                                               :value="rollChanges[rank.user_id] !== undefined ? rollChanges[rank.user_id] : rank.roll_number"
+                                               @input="rollChanges[rank.user_id] = $event.target.value"
+                                               class="w-24 px-2 py-1 border rounded text-center"
+                                               placeholder="Roll #">
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button @click="showRollNumberModal = false; rollChanges = {}" 
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
+                        Cancel
+                    </button>
+                    <button @click="saveRollNumbers()" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        Save Roll Numbers
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function comprehensiveResults() {
+    return {
+        loading: true,
+        error: null,
+        successMessage: null,
+        examData: null,
+        individualExams: [],
+        rankings: [],
+        showRollNumberModal: false,
+        rollChanges: {},
+        rankingsGenerated: false,
+        isTeacher: window.userRole === 'TEACHER' || window.userRole === 'SUPER_USER',
+        currentExamId: null, // Track current exam ID
+
+        async init() {
+            console.log('Initializing comprehensive results...');
+            const hasExam = await this.ensureExamSelected();
+            if (hasExam) {
+                this.currentExamId = window.currentMonthlyExamId;
+                await this.loadResults();
+            } else {
+                console.error('No exam selected, cannot load results');
+            }
+            
+            // Watch for changes in window.currentMonthlyExamId
+            setInterval(() => {
+                if (window.currentMonthlyExamId && window.currentMonthlyExamId !== this.currentExamId) {
+                    console.log('Monthly exam changed, reloading results...');
+                    this.currentExamId = window.currentMonthlyExamId;
+                    this.loadResults();
+                }
+            }, 500);
+        },
+
+        async ensureExamSelected() {
+            // Check if already set
+            if (window.currentMonthlyExamId) {
+                console.log('Using existing monthly exam ID:', window.currentMonthlyExamId);
+                return true;
+            }
+
+            // Try to auto-select from API
+            try {
+                console.log('Fetching monthly exams from API...');
+                const monthlyExamsResponse = await fetch('/api/monthly-exams');
+                
+                if (!monthlyExamsResponse.ok) {
+                    console.error('API response not OK:', monthlyExamsResponse.status);
+                    this.error = 'Failed to load monthly exams. Please check your connection.';
+                    this.loading = false;
+                    return false;
+                }
+
+                const monthlyExamsData = await monthlyExamsResponse.json();
+                console.log('Monthly exams data:', monthlyExamsData);
+                
+                // Check if we have exams - the data is directly in the data array
+                if (monthlyExamsData.success && monthlyExamsData.data && monthlyExamsData.data.length > 0) {
+                    window.currentMonthlyExamId = monthlyExamsData.data[0].id;
+                    console.log('Auto-selected monthly exam ID:', window.currentMonthlyExamId);
+                    return true;
+                } else {
+                    console.warn('No monthly exams found in response:', monthlyExamsData);
+                    this.error = 'No monthly exam available. Please create one first.';
+                    this.loading = false;
+                    return false;
+                }
+            } catch (error) {
+                console.error('Failed to fetch monthly exams:', error);
+                this.error = 'Failed to load monthly exams: ' + error.message;
+                this.loading = false;
+                return false;
+            }
+        },
+
+        async loadResults() {
+            try {
+                this.loading = true;
+                this.error = null;
+                
+                if (!window.currentMonthlyExamId) {
+                    throw new Error('No monthly exam selected');
+                }
+
+                console.log('Loading results for Monthly Exam ID:', window.currentMonthlyExamId);
+                const response = await fetch(`/api/monthly-exams/${window.currentMonthlyExamId}/comprehensive-ranking`);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to load results');
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.examData = data.data.monthly_exam;
+                    this.individualExams = data.data.individual_exams || [];
+                    this.rankings = data.data.rankings || [];
+                    
+                    // Ensure show_on_homepage is initialized
+                    if (this.examData && !this.examData.hasOwnProperty('show_on_homepage')) {
+                        this.examData.show_on_homepage = false;
+                    }
+                    
+                    // Debug: Log the exam info
+                    console.log('=== COMPREHENSIVE RESULTS LOADED ===');
+                    console.log('Monthly Exam ID:', window.currentMonthlyExamId);
+                    console.log('Exam Title:', this.examData?.name);
+                    console.log('Batch ID:', this.examData?.batch_id);
+                    console.log('Batch Name:', this.examData?.batch_name);
+                    console.log('Show on Homepage:', this.examData?.show_on_homepage);
+                    console.log('Total Students:', this.rankings.length);
+                    console.log('Individual Exams Count:', this.individualExams.length);
+                    console.log('===================================');
+                    
+                    // Sort rankings by current position/rank for sequential display
+                    this.rankings.sort((a, b) => {
+                        const rankA = a.position || 999999;
+                        const rankB = b.position || 999999;
+                        return rankA - rankB;  // Sort by current rank (1, 2, 3...)
+                    });
+                    
+                    // Check if rankings are already saved in database
+                    await this.checkIfRankingsGenerated();
+                    
+                    // Auto-save rankings when generated (only for teachers) if not already saved
+                    if (this.isTeacher && this.rankings.length > 0 && !this.rankingsGenerated) {
+                        await this.saveRankingsToDatabase();
+                    }
+                } else {
+                    throw new Error(data.message || 'Failed to load results');
+                }
+            } catch (error) {
+                console.error('Error loading results:', error);
+                this.error = error.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async checkIfRankingsGenerated() {
+            try {
+                // Check if rankings exist in database for this exam
+                const response = await fetch(`/api/monthly-exams/${window.currentMonthlyExamId}/rankings-status`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.rankingsGenerated = data.success && data.data && data.data.has_rankings;
+                }
+            } catch (error) {
+                console.log('Could not check rankings status:', error);
+                this.rankingsGenerated = false;
+            }
+        },
+
+        async saveRankingsToDatabase() {
+            try {
+                console.log('Auto-saving rankings to database...');
+                const response = await fetch(`/api/monthly-exams/${window.currentMonthlyExamId}/generate-ranking`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('Rankings saved successfully:', data.data);
+                    this.rankingsGenerated = true;
+                } else {
+                    console.warn('Failed to save rankings:', data.message);
+                }
+            } catch (error) {
+                console.error('Error saving rankings:', error);
+                // Don't show error to user - this is a background operation
+            }
+        },
+
+        async toggleHomepageFeature() {
+            try {
+                const response = await fetch(`/api/monthly-exams/${window.currentMonthlyExamId}/toggle-homepage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        show_on_homepage: this.examData.show_on_homepage 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const message = this.examData.show_on_homepage 
+                        ? '⭐ Top 3 students will now appear on the homepage!' 
+                        : 'Removed from homepage featured results';
+                    this.successMessage = message;
+                    
+                    // Hide success message after 3 seconds
+                    setTimeout(() => {
+                        this.successMessage = null;
+                    }, 3000);
+                } else {
+                    this.error = 'Failed to update homepage feature: ' + (data.message || 'Unknown error');
+                    // Revert checkbox if failed
+                    this.examData.show_on_homepage = !this.examData.show_on_homepage;
+                }
+            } catch (error) {
+                console.error('Error toggling homepage feature:', error);
+                this.error = 'Error updating homepage feature: ' + error.message;
+                // Revert checkbox if failed
+                this.examData.show_on_homepage = !this.examData.show_on_homepage;
+            }
+        },
+
+        async regenerateRanking() {
+            try {
+                this.loading = true;
+                this.error = null;
+                this.successMessage = null;
+                
+                const response = await fetch(`/api/monthly-exams/${window.currentMonthlyExamId}/generate-ranking`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Show success message in UI instead of alert
+                    this.successMessage = '✅ Ranking re-generated successfully!';
+                    this.rankingsGenerated = true;
+                    // Reload results to show updated rankings
+                    await this.loadResults();
+                    
+                    // Hide success message after 3 seconds
+                    setTimeout(() => {
+                        this.successMessage = null;
+                    }, 3000);
+                } else {
+                    this.error = 'Failed to re-generate ranking: ' + (data.message || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error re-generating ranking:', error);
+                this.error = 'Error re-generating ranking: ' + error.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async saveRollNumbers() {
+            try {
+                const updates = Object.entries(this.rollChanges).map(([userId, rollNumber]) => ({
+                    user_id: parseInt(userId),
+                    roll_number: rollNumber
+                }));
+
+                if (updates.length === 0) {
+                    alert('No changes to save');
+                    return;
+                }
+
+                const response = await fetch(`/api/monthly-exams/${window.currentMonthlyExamId}/assign-roll-numbers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ roll_numbers: updates })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Roll numbers saved successfully!');
+                    this.showRollNumberModal = false;
+                    this.rollChanges = {};
+                    await this.loadResults();
+                } else {
+                    throw new Error(data.message || 'Failed to save roll numbers');
+                }
+            } catch (error) {
+                console.error('Error saving roll numbers:', error);
+                alert('Error: ' + error.message);
+            }
+        },
+
+        downloadExcel() {
+            if (!this.rankings || this.rankings.length === 0) {
+                alert('No data to download');
+                return;
+            }
+
+            // Prepare CSV data with proper Unicode handling
+            let csv = [];
+            
+            // Add coaching center header at the top
+            csv.push('"জি. এস. স্টুডেন্ট নার্সিং সেন্টার, মহাদেবপুর, নওগাঁ।"');
+            csv.push(`"মাসিক পরীক্ষার ফলাফল - ${this.examData?.title || 'Monthly Exam'}"`);
+            csv.push('""'); // Empty row for spacing
+            
+            // Header row (wrapped in quotes to prevent issues)
+            let headers = ['Rank', 'Previous Rank', 'Roll Number', 'Student Name', 'Phone'];
+            
+            // Add individual exam headers
+            this.individualExams.forEach(exam => {
+                headers.push(exam.subject);
+            });
+            
+            headers.push('Exam Total', 'Attendance', 'Total Obtained', 'Total Marks', 'Percentage', 'Grade');
+            
+            // Quote all headers
+            csv.push(headers.map(h => `"${h}"`).join(','));
+            
+            // Data rows
+            this.rankings.forEach(rank => {
+                // Escape and properly quote fields - force text format with tab prefix for numeric fields
+                const escapeCSV = (str) => {
+                    if (str === null || str === undefined) return '""';
+                    str = String(str);
+                    // Wrap in quotes and escape internal quotes
+                    return '"' + str.replace(/"/g, '""') + '"';
+                };
+                
+                // Force text format for date-like values by adding tab character
+                const forceText = (str) => {
+                    if (str === null || str === undefined) return '""';
+                    // Add tab character to force Excel to treat as text
+                    return '"' + '\t' + String(str).replace(/"/g, '""') + '"';
+                };
+                
+                let row = [
+                    escapeCSV(rank.position),
+                    escapeCSV(rank.previous_position || '-'),
+                    escapeCSV(rank.roll_number || '-'),
+                    escapeCSV(rank.student_name),
+                    forceText(rank.student_phone || '') // Force phone as text to prevent scientific notation
+                ];
+                
+                // Add individual exam marks (force text to prevent date interpretation)
+                this.individualExams.forEach(exam => {
+                    if (rank.individual_marks && rank.individual_marks[exam.id]) {
+                        const marksStr = (rank.individual_marks[exam.id].marks_obtained || 0) + '/' + (rank.individual_marks[exam.id].total_marks || 0);
+                        row.push(forceText(marksStr));
+                    } else {
+                        row.push(forceText('0/0'));
+                    }
+                });
+                
+                row.push(
+                    escapeCSV(rank.total_exam_marks || 0),
+                    forceText((rank.attendance_marks || 0) + '/' + (rank.total_attendance_days || 0)),
+                    escapeCSV(rank.final_total || 0),
+                    escapeCSV(rank.total_possible || 0),
+                    escapeCSV(rank.percentage.toFixed(1) + '%'),
+                    escapeCSV(rank.grade)
+                );
+                
+                csv.push(row.join(','));
+            });
+            
+            // Create CSV content with UTF-8 BOM for proper Unicode support in Excel
+            const BOM = '\uFEFF';
+            const csvContent = BOM + csv.join('\n');
+            
+            // Create blob with UTF-8 encoding
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            const filename = `Monthly_Exam_Results_${this.examData?.month}_${this.examData?.year}_${new Date().toISOString().slice(0,10)}.csv`;
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    };
+}
+</script>

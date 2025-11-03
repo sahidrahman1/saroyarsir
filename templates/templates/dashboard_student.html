@@ -1,0 +1,611 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard - SmartGardenHub{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Mobile sidebar overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 z-40 md:hidden hidden">
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-75"></div>
+    </div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform -translate-x-full transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0">
+        <div class="flex items-center justify-center h-16 bg-indigo-600">
+            <div class="flex items-center">
+                <i class="fas fa-graduation-cap text-white text-2xl mr-2"></i>
+                <h1 class="text-white text-xl font-bold">Student Portal</h1>
+            </div>
+        </div>
+        
+        <nav class="mt-5 px-2">
+            <a href="#dashboard" data-section="dashboard" class="nav-item group flex items-center px-2 py-2 text-base font-medium rounded-md text-indigo-600 bg-indigo-100 mb-1">
+                <i class="fas fa-home mr-3 h-6 w-6"></i>
+                Dashboard
+            </a>
+            <a href="#documents" data-section="documents" class="nav-item group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 mb-1">
+                <i class="fas fa-file-pdf mr-3 h-6 w-6"></i>
+                Study Materials
+            </a>
+            <a href="#exams" data-section="exams" class="nav-item group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 mb-1">
+                <i class="fas fa-clipboard-list mr-3 h-6 w-6"></i>
+                Online Exams
+            </a>
+            <a href="#results" data-section="results" class="nav-item group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 mb-1">
+                <i class="fas fa-chart-bar mr-3 h-6 w-6"></i>
+                My Results
+            </a>
+            <a href="#attendance" data-section="attendance" class="nav-item group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 mb-1">
+                <i class="fas fa-calendar-check mr-3 h-6 w-6"></i>
+                Attendance
+            </a>
+            <a href="#fees" data-section="fees" class="nav-item group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 mb-1">
+                <i class="fas fa-money-bill-wave mr-3 h-6 w-6"></i>
+                Fee Status
+            </a>
+            <a href="#profile" data-section="profile" class="nav-item group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 mb-1">
+                <i class="fas fa-user mr-3 h-6 w-6"></i>
+                Profile
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main content -->
+    <div class="md:pl-64 flex flex-col flex-1">
+        <!-- Top navigation -->
+        <div class="sticky top-0 z-10 md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3 bg-gray-50">
+            <button type="button" id="sidebarToggle" class="-ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
+                <span class="sr-only">Open sidebar</span>
+                <i class="fas fa-bars h-6 w-6" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <main class="flex-1">
+            <div class="py-6">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+                    <!-- Page header -->
+                    <div class="mb-8">
+                        <h1 class="text-2xl font-semibold text-gray-900">Welcome back, <span id="studentName">Student</span>!</h1>
+                        <p class="mt-1 text-sm text-gray-600">Here's an overview of your academic progress</p>
+                    </div>
+
+                    <!-- Dashboard Section -->
+                    <div id="dashboardSection" class="content-section">
+                        <!-- Stats cards -->
+                        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+                            <div class="bg-white overflow-hidden shadow rounded-lg">
+                                <div class="p-5">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0">
+                                            <i class="fas fa-clipboard-list text-2xl text-indigo-600"></i>
+                                        </div>
+                                        <div class="ml-5 w-0 flex-1">
+                                            <dl>
+                                                <dt class="text-sm font-medium text-gray-500 truncate">Total Exams</dt>
+                                                <dd class="text-lg font-medium text-gray-900" id="totalExams">-</dd>
+                                            </dl>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white overflow-hidden shadow rounded-lg">
+                                <div class="p-5">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0">
+                                            <i class="fas fa-chart-line text-2xl text-green-600"></i>
+                                        </div>
+                                        <div class="ml-5 w-0 flex-1">
+                                            <dl>
+                                                <dt class="text-sm font-medium text-gray-500 truncate">Average Score</dt>
+                                                <dd class="text-lg font-medium text-gray-900" id="avgScore">-</dd>
+                                            </dl>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white overflow-hidden shadow rounded-lg">
+                                <div class="p-5">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0">
+                                            <i class="fas fa-calendar-check text-2xl text-blue-600"></i>
+                                        </div>
+                                        <div class="ml-5 w-0 flex-1">
+                                            <dl>
+                                                <dt class="text-sm font-medium text-gray-500 truncate">Attendance</dt>
+                                                <dd class="text-lg font-medium text-gray-900" id="attendanceRate">-</dd>
+                                            </dl>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white overflow-hidden shadow rounded-lg">
+                                <div class="p-5">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0">
+                                            <i class="fas fa-money-bill-wave text-2xl text-yellow-600"></i>
+                                        </div>
+                                        <div class="ml-5 w-0 flex-1">
+                                            <dl>
+                                                <dt class="text-sm font-medium text-gray-500 truncate">Fee Status</dt>
+                                                <dd class="text-lg font-medium text-gray-900" id="feeStatus">-</dd>
+                                            </dl>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent exams and announcements -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Recent Exams -->
+                            <div class="bg-white shadow rounded-lg">
+                                <div class="px-4 py-5 sm:p-6">
+                                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Exams</h3>
+                                    <div id="recentExams" class="space-y-3">
+                                        <!-- Recent exams will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Upcoming Events -->
+                            <div class="bg-white shadow rounded-lg">
+                                <div class="px-4 py-5 sm:p-6">
+                                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Upcoming Events</h3>
+                                    <div id="upcomingEvents" class="space-y-3">
+                                        <!-- Upcoming events will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documents Section -->
+                    <div id="documentsSection" class="content-section hidden">
+                        {% include 'partials/student_documents.html' %}
+                    </div>
+
+                    <!-- Exams Section -->
+                    <div id="examsSection" class="content-section hidden">
+                        <div class="bg-white shadow rounded-lg">
+                            <div class="px-4 py-5 sm:p-6">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Available Online Exams</h3>
+                                <div id="examsList">
+                                    <!-- Exams list will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div id="resultsSection" class="content-section hidden">
+                        <div class="bg-white shadow rounded-lg">
+                            <div class="px-4 py-5 sm:p-6">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">My Exam Results</h3>
+                                <div id="resultsList">
+                                    <!-- Results will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Section -->
+                    <div id="attendanceSection" class="content-section hidden">
+                        <div class="bg-white shadow rounded-lg">
+                            <div class="px-4 py-5 sm:p-6">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">My Attendance Record</h3>
+                                <div id="attendanceRecord">
+                                    <!-- Attendance will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fees Section -->
+                    <div id="feesSection" class="content-section hidden">
+                        <div class="bg-white shadow rounded-lg">
+                            <div class="px-4 py-5 sm:p-6">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Fee Payment Status</h3>
+                                <div id="feesList">
+                                    <!-- Fee details will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Section -->
+                    <div id="profileSection" class="content-section hidden">
+                        <div class="bg-white shadow rounded-lg">
+                            <div class="px-4 py-5 sm:p-6">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">My Profile</h3>
+                                <div id="profileDetails">
+                                    <!-- Profile details will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Sidebar functionality
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const navItems = document.querySelectorAll('.nav-item');
+    const contentSections = document.querySelectorAll('.content-section');
+
+    // Toggle sidebar on mobile
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('-translate-x-full');
+            sidebarOverlay.classList.toggle('hidden');
+        });
+    }
+
+    // Close sidebar when clicking overlay
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', function() {
+            sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.add('hidden');
+        });
+    }
+
+    // Navigation handling
+    navItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const section = this.getAttribute('data-section');
+            
+            // Update active nav item
+            navItems.forEach(nav => {
+                nav.classList.remove('text-indigo-600', 'bg-indigo-100');
+                nav.classList.add('text-gray-600');
+            });
+            this.classList.add('text-indigo-600', 'bg-indigo-100');
+            this.classList.remove('text-gray-600');
+
+            // Show corresponding section
+            contentSections.forEach(content => content.classList.add('hidden'));
+            const targetSection = document.getElementById(section + 'Section');
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+            }
+
+            // Load section data
+            loadSectionData(section);
+
+            // Close sidebar on mobile after selection
+            if (window.innerWidth < 768) {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+            }
+        });
+    });
+
+    // Load user data and dashboard
+    loadUserData();
+    loadDashboardData();
+
+    function loadUserData() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user.name) {
+            document.getElementById('studentName').textContent = user.name;
+        }
+    }
+
+    async function loadDashboardData() {
+        try {
+            // Load dashboard statistics
+            const response = await fetch('/api/users/dashboard-stats');
+            if (response.ok) {
+                const stats = await response.json();
+                updateDashboardStats(stats);
+            }
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+        }
+    }
+
+    function updateDashboardStats(stats) {
+        document.getElementById('totalExams').textContent = stats.totalExams || 0;
+        document.getElementById('avgScore').textContent = stats.averageScore ? `${stats.averageScore}%` : 'N/A';
+        document.getElementById('attendanceRate').textContent = stats.attendanceRate ? `${stats.attendanceRate}%` : 'N/A';
+        document.getElementById('feeStatus').textContent = stats.feeStatus || 'N/A';
+    }
+
+    async function loadSectionData(section) {
+        const loadingHtml = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i><p class="mt-2 text-gray-500">Loading...</p></div>';
+        
+        switch(section) {
+            case 'exams':
+                document.getElementById('examsList').innerHTML = loadingHtml;
+                await loadExams();
+                break;
+            case 'results':
+                document.getElementById('resultsList').innerHTML = loadingHtml;
+                await loadResults();
+                break;
+            case 'attendance':
+                document.getElementById('attendanceRecord').innerHTML = loadingHtml;
+                await loadAttendance();
+                break;
+            case 'fees':
+                document.getElementById('feesList').innerHTML = loadingHtml;
+                await loadFees();
+                break;
+            case 'profile':
+                document.getElementById('profileDetails').innerHTML = loadingHtml;
+                await loadProfile();
+                break;
+        }
+    }
+
+    async function loadExams() {
+        try {
+            const response = await fetch('/api/exams/student');
+            if (response.ok) {
+                const exams = await response.json();
+                renderExams(exams);
+            } else {
+                document.getElementById('examsList').innerHTML = '<p class="text-gray-500">No exams available</p>';
+            }
+        } catch (error) {
+            document.getElementById('examsList').innerHTML = '<p class="text-red-500">Error loading exams</p>';
+        }
+    }
+
+    function renderExams(exams) {
+        const html = exams.length > 0 ? exams.map(exam => `
+            <div class="border rounded-lg p-4 mb-4">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h4 class="font-medium text-gray-900">${exam.title}</h4>
+                        <p class="text-sm text-gray-600">${exam.subject}</p>
+                        <p class="text-sm text-gray-500">Duration: ${exam.duration} minutes</p>
+                        <p class="text-sm text-gray-500">Total Marks: ${exam.totalMarks}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${exam.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                            ${exam.status}
+                        </span>
+                        ${exam.status === 'ACTIVE' ? `
+                            <button onclick="startExam('${exam.id}')" class="mt-2 block w-full bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-700">
+                                Start Exam
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('') : '<p class="text-gray-500">No exams available at the moment</p>';
+        
+        document.getElementById('examsList').innerHTML = html;
+    }
+
+    async function loadResults() {
+        try {
+            const response = await fetch('/api/results/student');
+            if (response.ok) {
+                const results = await response.json();
+                renderResults(results);
+            } else {
+                document.getElementById('resultsList').innerHTML = '<p class="text-gray-500">No results available</p>';
+            }
+        } catch (error) {
+            document.getElementById('resultsList').innerHTML = '<p class="text-red-500">Error loading results</p>';
+        }
+    }
+
+    function renderResults(results) {
+        const html = results.length > 0 ? `
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${results.map(result => `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${result.examTitle}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${result.score}/${result.totalMarks}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getGradeColor(result.grade)}">
+                                        ${result.grade}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(result.submittedAt).toLocaleDateString()}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        ` : '<p class="text-gray-500">No results available</p>';
+        
+        document.getElementById('resultsList').innerHTML = html;
+    }
+
+    function getGradeColor(grade) {
+        const colors = {
+            'A+': 'bg-green-100 text-green-800',
+            'A': 'bg-green-100 text-green-800',
+            'A-': 'bg-green-100 text-green-800',
+            'B': 'bg-blue-100 text-blue-800',
+            'C': 'bg-yellow-100 text-yellow-800',
+            'D': 'bg-orange-100 text-orange-800',
+            'F': 'bg-red-100 text-red-800'
+        };
+        return colors[grade] || 'bg-gray-100 text-gray-800';
+    }
+
+    async function loadAttendance() {
+        try {
+            const response = await fetch('/api/attendance/student');
+            if (response.ok) {
+                const attendance = await response.json();
+                renderAttendance(attendance);
+            } else {
+                document.getElementById('attendanceRecord').innerHTML = '<p class="text-gray-500">No attendance records available</p>';
+            }
+        } catch (error) {
+            document.getElementById('attendanceRecord').innerHTML = '<p class="text-red-500">Error loading attendance</p>';
+        }
+    }
+
+    function renderAttendance(attendance) {
+        const html = attendance.length > 0 ? `
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${attendance.map(record => `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${new Date(record.date).toLocaleDateString()}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${record.status === 'PRESENT' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                        ${record.status}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${record.checkInTime || '-'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${record.checkOutTime || '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        ` : '<p class="text-gray-500">No attendance records available</p>';
+        
+        document.getElementById('attendanceRecord').innerHTML = html;
+    }
+
+    async function loadFees() {
+        try {
+            const response = await fetch('/api/fees/student');
+            if (response.ok) {
+                const fees = await response.json();
+                renderFees(fees);
+            } else {
+                document.getElementById('feesList').innerHTML = '<p class="text-gray-500">No fee records available</p>';
+            }
+        } catch (error) {
+            document.getElementById('feesList').innerHTML = '<p class="text-red-500">Error loading fees</p>';
+        }
+    }
+
+    function renderFees(fees) {
+        const html = fees.length > 0 ? `
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${fees.map(fee => `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${fee.month}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">৳${fee.amount}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${fee.status === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                        ${fee.status}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${fee.dueDate ? new Date(fee.dueDate).toLocaleDateString() : '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        ` : '<p class="text-gray-500">No fee records available</p>';
+        
+        document.getElementById('feesList').innerHTML = html;
+    }
+
+    async function loadProfile() {
+        try {
+            const response = await fetch('/api/users/profile');
+            if (response.ok) {
+                const profile = await response.json();
+                renderProfile(profile);
+            } else {
+                document.getElementById('profileDetails').innerHTML = '<p class="text-gray-500">Unable to load profile</p>';
+            }
+        } catch (error) {
+            document.getElementById('profileDetails').innerHTML = '<p class="text-red-500">Error loading profile</p>';
+        }
+    }
+
+    function renderProfile(profile) {
+        const html = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-4">Personal Information</h4>
+                    <dl class="space-y-3">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Name</dt>
+                            <dd class="text-sm text-gray-900">${profile.name}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Phone</dt>
+                            <dd class="text-sm text-gray-900">${profile.phone}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Email</dt>
+                            <dd class="text-sm text-gray-900">${profile.email || 'Not provided'}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Role</dt>
+                            <dd class="text-sm text-gray-900">${profile.role}</dd>
+                        </div>
+                    </dl>
+                </div>
+                <div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-4">Academic Information</h4>
+                    <dl class="space-y-3">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Student ID</dt>
+                            <dd class="text-sm text-gray-900">${profile.id}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Batch</dt>
+                            <dd class="text-sm text-gray-900">${profile.batchName || 'Not assigned'}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Joined Date</dt>
+                            <dd class="text-sm text-gray-900">${new Date(profile.createdAt).toLocaleDateString()}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+        `;
+        document.getElementById('profileDetails').innerHTML = html;
+    }
+
+    // Global function for starting exams
+    window.startExam = function(examId) {
+        window.location.href = `/exam/${examId}`;
+    };
+});
+</script>
+{% endblock %}

@@ -1,0 +1,325 @@
+<!-- Online Exam Manager Component -->
+<div x-show="activeTab === 'online-exams'" class="space-y-6">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Online Exam Manager</h2>
+            <p class="text-gray-600">Create and manage online exams</p>
+        </div>
+        <button 
+            x-on:click="openCreateOnlineExamModal = true" 
+            class="btn-primary inline-flex items-center"
+        >
+            <i class="fas fa-plus mr-2"></i>
+            Create Online Exam
+        </button>
+    </div>
+
+    <!-- Exam Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-laptop text-2xl text-blue-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Exams</p>
+                    <p class="text-2xl font-semibold text-gray-900" x-text="onlineExamStats.total || 0"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-play-circle text-2xl text-green-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Active</p>
+                    <p class="text-2xl font-semibold text-gray-900" x-text="onlineExamStats.active || 0"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-check-circle text-2xl text-orange-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Completed</p>
+                    <p class="text-2xl font-semibold text-gray-900" x-text="onlineExamStats.completed || 0"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-users text-2xl text-purple-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Participants</p>
+                    <p class="text-2xl font-semibold text-gray-900" x-text="onlineExamStats.participants || 0"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Online Exams List -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Online Exams</h3>
+        </div>
+        
+        <div class="divide-y divide-gray-200">
+            <template x-for="exam in onlineExams" :key="exam.id">
+                <div class="p-6">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <h3 class="text-lg font-semibold text-gray-900" x-text="exam.title"></h3>
+                                <span 
+                                    x-text="exam.status"
+                                    x-bind:class="{
+                                        'bg-green-100 text-green-800': exam.status === 'active',
+                                        'bg-blue-100 text-blue-800': exam.status === 'scheduled',
+                                        'bg-gray-100 text-gray-800': exam.status === 'completed',
+                                        'bg-red-100 text-red-800': exam.status === 'cancelled'
+                                    }"
+                                    class="px-2 py-1 text-xs font-medium rounded-full capitalize"
+                                ></span>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                    <p class="text-sm text-gray-500">Subject</p>
+                                    <p class="text-sm font-medium text-gray-900" x-text="exam.subject"></p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Batch</p>
+                                    <p class="text-sm font-medium text-gray-900" x-text="exam.batch_name"></p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Duration</p>
+                                    <p class="text-sm font-medium text-gray-900" x-text="`${exam.duration} minutes`"></p>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                    <p class="text-sm text-gray-500">Start Time</p>
+                                    <p class="text-sm font-medium text-gray-900" x-text="exam.start_time"></p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">End Time</p>
+                                    <p class="text-sm font-medium text-gray-900" x-text="exam.end_time"></p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Questions</p>
+                                    <p class="text-sm font-medium text-gray-900" x-text="`${exam.total_questions} questions`"></p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-6 text-sm text-gray-500">
+                                <span>
+                                    <i class="fas fa-users mr-1"></i>
+                                    <span x-text="exam.participants_count || 0"></span> participants
+                                </span>
+                                <span>
+                                    <i class="fas fa-star mr-1"></i>
+                                    <span x-text="exam.total_marks"></span> total marks
+                                </span>
+                                <span>
+                                    <i class="fas fa-clock mr-1"></i>
+                                    Created <span x-text="exam.created_at"></span>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="ml-4 flex flex-col space-y-2">
+                            <button 
+                                x-on:click="viewExamDetails(exam)" 
+                                class="btn-secondary text-sm inline-flex items-center"
+                            >
+                                <i class="fas fa-eye mr-2"></i>
+                                View Details
+                            </button>
+                            
+                            <button 
+                                x-show="exam.status === 'scheduled'"
+                                x-on:click="startExam(exam)" 
+                                class="btn-primary text-sm inline-flex items-center"
+                            >
+                                <i class="fas fa-play mr-2"></i>
+                                Start Exam
+                            </button>
+                            
+                            <button 
+                                x-show="exam.status === 'active'"
+                                x-on:click="endExam(exam)" 
+                                class="bg-red-600 text-white px-3 py-1 rounded text-sm inline-flex items-center hover:bg-red-700"
+                            >
+                                <i class="fas fa-stop mr-2"></i>
+                                End Exam
+                            </button>
+                            
+                            <button 
+                                x-show="exam.status === 'completed'"
+                                x-on:click="viewResults(exam)" 
+                                class="btn-secondary text-sm inline-flex items-center"
+                            >
+                                <i class="fas fa-chart-bar mr-2"></i>
+                                View Results
+                            </button>
+                            
+                            <div class="flex space-x-1">
+                                <button 
+                                    x-on:click="editExam(exam)" 
+                                    class="text-indigo-600 hover:text-indigo-900 p-1"
+                                    title="Edit Exam"
+                                >
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button 
+                                    x-on:click="copyExamLink(exam)" 
+                                    class="text-blue-600 hover:text-blue-900 p-1"
+                                    title="Copy Link"
+                                >
+                                    <i class="fas fa-link"></i>
+                                </button>
+                                <button 
+                                    x-on:click="deleteExam(exam.id)" 
+                                    class="text-red-600 hover:text-red-900 p-1"
+                                    title="Delete Exam"
+                                >
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <div x-show="onlineExams.length === 0" class="text-center py-12">
+            <i class="fas fa-laptop text-6xl text-gray-400 mb-4"></i>
+            <p class="text-gray-600">No online exams created yet</p>
+            <button 
+                x-on:click="openCreateOnlineExamModal = true" 
+                class="btn-primary mt-4 inline-flex items-center"
+            >
+                <i class="fas fa-plus mr-2"></i>
+                Create First Online Exam
+            </button>
+        </div>
+    </div>
+
+    <!-- Live Exam Monitor -->
+    <div x-show="activeOnlineExams.length > 0" class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                <i class="fas fa-broadcast-tower text-red-500 mr-2"></i>
+                Live Exam Monitor
+            </h3>
+        </div>
+        
+        <div class="p-6">
+            <template x-for="exam in activeOnlineExams" :key="exam.id">
+                <div class="border border-red-200 rounded-lg p-4 mb-4 bg-red-50">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="text-lg font-semibold text-gray-900" x-text="exam.title"></h4>
+                        <div class="flex items-center space-x-2">
+                            <span class="flex items-center text-red-600">
+                                <span class="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
+                                LIVE
+                            </span>
+                            <span class="text-sm text-gray-600" x-text="`${exam.time_remaining} left`"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-blue-600" x-text="exam.active_participants"></p>
+                            <p class="text-sm text-gray-600">Active Participants</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-green-600" x-text="exam.completed_participants"></p>
+                            <p class="text-sm text-gray-600">Completed</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-orange-600" x-text="exam.average_progress"></p>
+                            <p class="text-sm text-gray-600">Avg. Progress (%)</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-purple-600" x-text="exam.total_questions"></p>
+                            <p class="text-sm text-gray-600">Total Questions</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button 
+                            x-on:click="viewLiveParticipants(exam)" 
+                            class="btn-secondary text-sm"
+                        >
+                            <i class="fas fa-users mr-2"></i>
+                            View Participants
+                        </button>
+                        <button 
+                            x-on:click="sendExamNotification(exam)" 
+                            class="btn-secondary text-sm"
+                        >
+                            <i class="fas fa-bell mr-2"></i>
+                            Send Notification
+                        </button>
+                        <button 
+                            x-on:click="extendExamTime(exam)" 
+                            class="btn-secondary text-sm"
+                        >
+                            <i class="fas fa-clock mr-2"></i>
+                            Extend Time
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Quick Actions</h3>
+        </div>
+        
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button 
+                    x-on:click="createQuickExam()" 
+                    class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+                >
+                    <i class="fas fa-bolt text-3xl text-yellow-600 mb-3"></i>
+                    <h4 class="font-medium text-gray-900">Quick Exam</h4>
+                    <p class="text-sm text-gray-500 mt-1">Create exam from question bank</p>
+                </button>
+                
+                <button 
+                    x-on:click="scheduleExam()" 
+                    class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+                >
+                    <i class="fas fa-calendar-plus text-3xl text-blue-600 mb-3"></i>
+                    <h4 class="font-medium text-gray-900">Schedule Exam</h4>
+                    <p class="text-sm text-gray-500 mt-1">Schedule exam for later</p>
+                </button>
+                
+                <button 
+                    x-on:click="copyFromPrevious()" 
+                    class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+                >
+                    <i class="fas fa-copy text-3xl text-green-600 mb-3"></i>
+                    <h4 class="font-medium text-gray-900">Copy Previous</h4>
+                    <p class="text-sm text-gray-500 mt-1">Copy from existing exam</p>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

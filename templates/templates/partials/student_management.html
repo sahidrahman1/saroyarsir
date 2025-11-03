@@ -1,0 +1,905 @@
+<div x-data="studentManagement()" x-init="loadStudents()">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            👨‍🎓 Student Management
+        </h2>
+        <div class="flex space-x-3">
+            <button @click="loadStudents()" class="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200" title="Refresh Data">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh
+            </button>
+            <button @click="showAddModal = true; loadBatches()" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                <i class="fas fa-plus mr-2"></i>Add New Student
+            </button>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card mb-6">
+        <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+                <input type="text" 
+                       x-model="searchTerm" 
+                       @input="filterStudents()"
+                       placeholder="Search by name, parent name, or parent phone..." 
+                       class="form-input">
+            </div>
+            <div class="min-w-[200px]">
+                <select x-model="filterBatch" @change="filterStudents()" class="form-input">
+                    <option value="">All Batches</option>
+                    <template x-for="batch in batches" :key="batch.id">
+                        <option :value="batch.id" x-text="batch.name"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="text-sm text-gray-600 flex items-center">
+                <i class="fas fa-info-circle mr-1"></i>
+                <span x-text="`${batches.length} batches available`"></span>
+                <span x-show="batches.length > 0" class="ml-2 text-xs">
+                    (Including empty batches)
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Table -->
+    <div class="card">
+        <div x-show="loading" class="text-center py-8">
+            <div class="spinner mx-auto"></div>
+            <p class="mt-2 text-gray-600">Loading students...</p>
+        </div>
+
+        <div x-show="!loading && filteredStudents.length === 0" class="text-center py-8">
+            <i class="fas fa-users text-4xl text-gray-400 mb-4"></i>
+            <p class="text-gray-600">No students found</p>
+        </div>
+
+        <div x-show="!loading && filteredStudents.length > 0">
+            <table class="w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Name</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parents Info</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admission</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Password</th>
+                        <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <template x-for="student in filteredStudents" :key="student.id">
+                        <tr class="hover:bg-gray-50">
+                            <!-- Student Name -->
+                            <td class="px-3 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="text-blue-600 font-medium text-xs" x-text="student.firstName.charAt(0) + student.lastName.charAt(0)"></span>
+                                    </div>
+                                    <div class="ml-2">
+                                        <div class="text-sm font-medium text-gray-900" x-text="student.firstName + ' ' + student.lastName"></div>
+                                        <div class="text-xs text-gray-500" x-text="student.school || 'No school info'"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <!-- Parents Info -->
+                            <td class="px-3 py-4">
+                                <div class="text-sm">
+                                    <div class="font-medium text-gray-900 text-xs" x-show="student.guardianName">
+                                        <i class="fas fa-male text-blue-600 mr-1"></i>
+                                        <span x-text="student.guardianName"></span>
+                                    </div>
+                                    <div class="text-gray-700 mt-1 text-xs" x-show="student.motherName">
+                                        <i class="fas fa-female text-pink-600 mr-1"></i>
+                                        <span x-text="student.motherName"></span>
+                                    </div>
+                                    <div class="text-xs text-gray-400 mt-1" x-show="!student.guardianName && !student.motherName">
+                                        No parent
+                                    </div>
+                                </div>
+                            </td>
+                            <!-- Parent Phone -->
+                            <td class="px-3 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900" x-text="student.guardianPhone || 'No phone'"></div>
+                                <div class="text-xs text-gray-500">Login</div>
+                            </td>
+                            <!-- Admission Date -->
+                            <td class="px-3 py-4 whitespace-nowrap">
+                                <div class="text-xs text-gray-900" x-text="student.admissionDate ? new Date(student.admissionDate).toLocaleDateString('en-GB') : 'Not set'"></div>
+                                <div class="text-xs text-gray-500" x-show="student.admissionDate" x-text="getDaysAgo(student.admissionDate)"></div>
+                            </td>
+                            <!-- Address -->
+                            <td class="px-3 py-4">
+                                <div class="text-xs text-gray-700 max-w-[120px] truncate" x-text="student.address || 'No address'"></div>
+                            </td>
+                            <!-- Batch -->
+                            <td class="px-3 py-4 whitespace-nowrap">
+                                <span class="text-xs text-gray-900" x-text="student.batch ? student.batch.name : 'No batch'"></span>
+                            </td>
+                            <!-- Login Password with Show/Hide Button -->
+                            <td class="px-3 py-4 whitespace-nowrap" x-data="{ showPassword: false }">
+                                <div class="flex items-center space-x-1">
+                                    <span class="text-xs font-mono text-gray-900" 
+                                          x-text="showPassword ? (student.displayPassword || 'N/A') : '••••••'"></span>
+                                    <button @click="showPassword = !showPassword" 
+                                            class="text-blue-600 hover:text-blue-800 text-xs bg-blue-100 hover:bg-blue-200 px-1.5 py-0.5 rounded-full transition-colors duration-200">
+                                        <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            <!-- Actions -->
+                            <td class="px-3 py-4 whitespace-nowrap text-right">
+                                <div class="flex justify-end space-x-1">
+                                    <button @click="editStudent(student)" class="bg-blue-500 hover:bg-blue-600 text-white p-1.5 rounded transition-colors" title="Edit">
+                                        <i class="fas fa-edit text-xs"></i>
+                                    </button>
+                                    <button @click="resetPassword(student)" class="bg-yellow-500 hover:bg-yellow-600 text-white p-1.5 rounded transition-colors" title="Reset">
+                                        <i class="fas fa-key text-xs"></i>
+                                    </button>
+                                    <button @click="archiveStudent(student)" class="bg-orange-500 hover:bg-orange-600 text-white p-1.5 rounded transition-colors" title="Archive">
+                                        <i class="fas fa-archive text-xs"></i>
+                                    </button>
+                                    <button @click="deleteStudent(student)" class="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded transition-colors" title="Delete">
+                                        <i class="fas fa-trash text-xs"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add/Edit Student Modal -->
+    <div x-show="showAddModal || showEditModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform scale-95"
+                 x-transition:enter-end="opacity-100 transform scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 transform scale-100"
+                 x-transition:leave-end="opacity-0 transform scale-95"
+                 class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900" x-text="showAddModal ? 'Add New Student' : 'Edit Student'"></h3>
+                </div>
+
+                <form @submit.prevent="saveStudent()" class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+                            <input type="text" x-model="studentForm.firstName" required class="form-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+                            <input type="text" x-model="studentForm.lastName" required class="form-input">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Father Name</label>
+                            <input type="text" x-model="studentForm.guardianName" class="form-input" placeholder="Guardian/Father Name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Mother Name</label>
+                            <input type="text" x-model="studentForm.motherName" class="form-input" placeholder="Mother Name">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Parent Phone Number *</label>
+                        <input type="text" x-model="studentForm.guardianPhone" required class="form-input" placeholder="01XXXXXXXXX (for SMS & Login)">
+                        <p class="text-xs text-gray-500 mt-1">This will be used for login and SMS notifications</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                        <textarea x-model="studentForm.address" rows="2" class="form-input" placeholder="Full address"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">School</label>
+                        <input type="text" x-model="studentForm.school" class="form-input" placeholder="School Name">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Admission Date</label>
+                        <input type="date" x-model="studentForm.admissionDate" class="form-input">
+                        <p class="text-xs text-gray-500 mt-1">Date when student joined</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Batch 
+                            <span class="text-xs text-gray-500" x-text="`(${batches.length} available)`"></span>
+                        </label>
+                        <select x-model="studentForm.batchId" class="form-input">
+                            <option value="">Select Batch</option>
+                            <template x-for="batch in batches" :key="batch.id">
+                                <option :value="batch.id" x-text="batch.name"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" @click="closeModal()" class="btn-secondary">Cancel</button>
+                        <button type="submit" :disabled="saving" class="btn-primary">
+                            <span x-show="!saving" x-text="showAddModal ? 'Add Student' : 'Update Student'"></span>
+                            <span x-show="saving" class="flex items-center">
+                                <div class="spinner mr-2"></div>
+                                Saving...
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern Reset Password Confirmation Modal -->
+    <div x-show="showResetPasswordModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 backdrop-blur-sm">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform scale-95"
+                 x-transition:enter-end="opacity-100 transform scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 transform scale-100"
+                 x-transition:leave-end="opacity-0 transform scale-95"
+                 class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+                
+                <!-- Header with gradient -->
+                <div class="px-6 py-4 bg-gradient-to-r from-yellow-500 to-orange-600 text-white">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-key text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">🔄 Reset Student Password</h3>
+                            <p class="text-yellow-100 text-sm">Generate new login credentials</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content -->
+                <div class="p-6">
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg p-4 mb-6">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-user-graduate text-yellow-600 text-lg"></i>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <h4 class="text-lg font-semibold text-yellow-900 mb-2">Reset password for:</h4>
+                                
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-700">Student Name:</span>
+                                        <span class="text-gray-900 font-semibold" x-text="studentToReset ? studentToReset.firstName + ' ' + studentToReset.lastName : 'Unknown'"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-700">Current Username:</span>
+                                        <span class="text-gray-900 font-mono" x-text="studentToReset?.guardianPhone || studentToReset?.phoneNumber || 'Not set'"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-700">Parent Name:</span>
+                                        <span class="text-gray-900" x-text="studentToReset?.guardianName || 'Not provided'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                            <p class="text-blue-800 text-sm">
+                                <strong>What happens:</strong> Password will be reset to the <strong>last 4 digits</strong> of the parent phone number.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="text-center text-gray-600">
+                        <p class="text-lg font-medium">Are you sure you want to reset this password?</p>
+                        <p class="text-sm text-gray-500 mt-1">The new password will be shown after reset</p>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+                    <button @click="showResetPasswordModal = false; studentToReset = null" 
+                            class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </button>
+                    <button @click="confirmPasswordReset()" 
+                            :disabled="resetting"
+                            :class="resetting ? 'bg-gray-300 cursor-not-allowed' : 'bg-yellow-500 hover:bg-yellow-600'"
+                            class="px-6 py-2 text-white rounded-lg transition-colors duration-200">
+                        <span x-show="!resetting" class="flex items-center">
+                            <i class="fas fa-key mr-2"></i>Reset Password
+                        </span>
+                        <span x-show="resetting" class="flex items-center">
+                            <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                            Resetting...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Display Modal -->
+    <div x-show="showPasswordModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform scale-95"
+                 x-transition:enter-end="opacity-100 transform scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 transform scale-100"
+                 x-transition:leave-end="opacity-0 transform scale-95"
+                 class="bg-white rounded-xl shadow-2xl max-w-md w-full">
+                
+                <div class="px-6 py-4 bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-t-xl">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-user-plus text-lg"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold">🎉 Login Credentials Ready!</h3>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <div class="bg-blue-50 rounded-lg p-4 mb-4">
+                        <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
+                            <i class="fas fa-key text-blue-600 mr-2"></i>
+                            Login Credentials
+                        </h4>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 uppercase tracking-wide">Username (Parent Phone)</label>
+                                <div class="flex items-center justify-between bg-white p-3 rounded-lg border">
+                                    <span class="font-mono text-lg text-gray-900" x-text="newStudentCredentials.username"></span>
+                                    <button @click="copyToClipboard(newStudentCredentials.username)" class="text-blue-600 hover:text-blue-800">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 uppercase tracking-wide">Password</label>
+                                <div class="flex items-center justify-between bg-white p-3 rounded-lg border">
+                                    <span class="font-mono text-lg text-gray-900" x-text="newStudentCredentials.password"></span>
+                                    <button @click="copyToClipboard(newStudentCredentials.password)" class="text-blue-600 hover:text-blue-800">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                            <p class="text-sm text-yellow-800">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                <strong>Important:</strong> <span x-text="newStudentCredentials.note"></span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+                    <button @click="showPasswordModal = false; newStudentCredentials = {}" class="btn-primary">
+                        <i class="fas fa-check mr-2"></i>Got it!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div x-show="showDeleteModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform scale-95"
+                 x-transition:enter-end="opacity-100 transform scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 transform scale-100"
+                 x-transition:leave-end="opacity-0 transform scale-95"
+                 class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Confirm Delete</h3>
+                </div>
+
+                <div class="p-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <p class="text-sm text-gray-700 mb-2">
+                                Are you sure you want to delete 
+                                <strong x-text="studentToDelete ? studentToDelete.firstName + ' ' + studentToDelete.lastName : ''"></strong>?
+                            </p>
+                            <p class="text-sm text-gray-500">
+                                This action cannot be undone. All student data will be permanently removed.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end space-x-3">
+                    <button type="button" @click="showDeleteModal = false; studentToDelete = null" class="btn-secondary">
+                        Cancel
+                    </button>
+                    <button type="button" @click="confirmDelete()" :disabled="deleting" class="btn-danger">
+                        <span x-show="!deleting">Delete</span>
+                        <span x-show="deleting" class="flex items-center">
+                            <div class="spinner mr-2"></div>
+                            Deleting...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function studentManagement() {
+    return {
+        students: [],
+        filteredStudents: [],
+        batches: [],
+        loading: false,
+        saving: false,
+        deleting: false,
+        resetting: false,
+        showAddModal: false,
+        showEditModal: false,
+        showDeleteModal: false,
+        showPasswordModal: false,
+        showResetPasswordModal: false,
+        searchTerm: '',
+        filterBatch: '',
+        studentToDelete: null,
+        studentToReset: null,
+        newStudentCredentials: {},
+        studentForm: {
+            id: null,
+            firstName: '',
+            lastName: '',
+            guardianName: '',
+            guardianPhone: '',
+            motherName: '',
+            address: '',
+            school: '',
+            admissionDate: '',
+            batchId: ''
+        },
+
+        // Calculate days ago from admission date
+        getDaysAgo(dateString) {
+            if (!dateString) return '';
+            const admissionDate = new Date(dateString);
+            const today = new Date();
+            const diffTime = Math.abs(today - admissionDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 30) {
+                return `${diffDays} days ago`;
+            } else if (diffDays < 365) {
+                const months = Math.floor(diffDays / 30);
+                return `${months} month${months > 1 ? 's' : ''} ago`;
+            } else {
+                const years = Math.floor(diffDays / 365);
+                return `${years} year${years > 1 ? 's' : ''} ago`;
+            }
+        },
+
+        // Modern toast notification
+        showToast(message, type = 'info', duration = 5000) {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full`;
+            
+            // Set colors based on type
+            const colors = {
+                success: 'bg-green-500 text-white',
+                error: 'bg-red-500 text-white',
+                warning: 'bg-yellow-500 text-white',
+                info: 'bg-blue-500 text-white'
+            };
+            
+            toast.className += ` ${colors[type] || colors.info}`;
+            toast.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : type === 'warning' ? 'exclamation' : 'info'} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Remove after duration
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, duration);
+        },
+
+        // Copy to clipboard function
+        async copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                this.showToast('Copied to clipboard!', 'success', 2000);
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                this.showToast('Copied to clipboard!', 'success', 2000);
+            }
+        },
+
+        // Generate display password for viewing (last 4 digits of parent phone)
+        generateDisplayPassword(student) {
+            if (!student.guardianPhone) {
+                return 'Not Available';
+            }
+            
+            // Password is last 4 digits of parent phone number
+            const phoneDigits = student.guardianPhone.replace(/\D/g, '');
+            if (phoneDigits.length < 4) {
+                return 'Not Available';
+            }
+            return phoneDigits.slice(-4);
+        },
+
+        async loadBatches() {
+            console.log('🔄 Loading all batches...');
+            try {
+                const batchesResponse = await fetch('/api/batches');
+                const batchesData = await batchesResponse.json();
+                
+                console.log('📊 Batches response:', batchesData);
+                
+                if (batchesData.success) {
+                    // For /api/batches endpoint, data is directly an array
+                    this.batches = Array.isArray(batchesData.data) ? batchesData.data : [];
+                    
+                    console.log('✅ Loaded batches:', this.batches.length);
+                    
+                    this.showToast(`Loaded ${this.batches.length} batches`, 'success', 3000);
+                } else {
+                    console.error('❌ Invalid batches response structure');
+                    this.showToast('Failed to load batches', 'error');
+                }
+            } catch (error) {
+                console.error('❌ Error loading batches:', error);
+                this.showToast('Failed to load batches', 'error');
+            }
+        },
+
+        async loadStudents() {
+            this.loading = true;
+            try {
+                const [studentsResponse, batchesResponse] = await Promise.all([
+                    fetch('/api/students'),
+                    fetch('/api/batches')  // Changed from /api/batches/active to /api/batches to get ALL batches
+                ]);
+                
+                const studentsData = await studentsResponse.json();
+                const batchesData = await batchesResponse.json();
+                
+                console.log('Students response:', studentsData);
+                console.log('Batches response:', batchesData);
+                
+                // Handle paginated students response
+                if (studentsData.success) {
+                    this.students = studentsData.data || studentsData.students || [];
+                } else {
+                    this.students = [];
+                }
+                
+                // Handle batches response - /api/batches returns data directly as array
+                if (batchesData.success && batchesData.data) {
+                    if (Array.isArray(batchesData.data)) {
+                        this.batches = batchesData.data;
+                        console.log('✅ Loaded batches from data array:', this.batches.length);
+                    } else if (batchesData.data.batches && Array.isArray(batchesData.data.batches)) {
+                        this.batches = batchesData.data.batches;
+                        console.log('✅ Loaded batches from data.batches:', this.batches.length);
+                    } else {
+                        this.batches = [];
+                        console.log('❌ No batches found in response structure');
+                    }
+                } else {
+                    this.batches = [];
+                    console.log('❌ Invalid batches response structure');
+                }
+                
+                console.log('📊 Final batches loaded:', this.batches.length);
+                console.log('📋 Batch details:', this.batches.map(b => ({ 
+                    id: b.id, 
+                    name: b.name, 
+                    student_count: b.student_count || 0,
+                    description: b.description,
+                    is_active: b.is_active
+                })));
+                
+                // Log active vs inactive batches
+                const activeBatches = this.batches.filter(b => b.is_active !== false);
+                const inactiveBatches = this.batches.filter(b => b.is_active === false);
+                console.log(`📊 Active batches: ${activeBatches.length}, Inactive batches: ${inactiveBatches.length}`);
+                
+                // If still no batches loaded, try the active endpoint as fallback
+                if (this.batches.length === 0) {
+                    console.log('⚠️ No batches found, trying active endpoint as fallback...');
+                    try {
+                        const altBatchesResponse = await fetch('/api/batches/active');
+                        const altBatchesData = await altBatchesResponse.json();
+                        console.log('🔄 Alternative batches response:', altBatchesData);
+                        
+                        if (altBatchesData.success && altBatchesData.data && altBatchesData.data.batches) {
+                            this.batches = altBatchesData.data.batches;
+                            console.log('✅ Loaded from alternative endpoint:', this.batches.length);
+                        }
+                    } catch (altError) {
+                        console.error('❌ Alternative batch fetch failed:', altError);
+                    }
+                }
+                
+                // Generate display passwords for each student
+                this.students.forEach(student => {
+                    student.displayPassword = this.generateDisplayPassword(student);
+                });
+                
+                this.filterStudents();
+            } catch (error) {
+                console.error('Failed to load students:', error);
+                this.showToast('Failed to load students', 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        filterStudents() {
+            this.filteredStudents = this.students.filter(student => {
+                const matchesSearch = !this.searchTerm || 
+                    student.firstName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    student.lastName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    student.phoneNumber.includes(this.searchTerm) ||
+                    (student.guardianName && student.guardianName.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+                    (student.guardianPhone && student.guardianPhone.includes(this.searchTerm));
+                
+                const matchesBatch = !this.filterBatch || student.batchId == this.filterBatch;
+                
+                return matchesSearch && matchesBatch;
+            });
+        },
+
+        editStudent(student) {
+            this.studentForm = { ...student };
+            this.showEditModal = true;
+        },
+
+        async saveStudent() {
+            this.saving = true;
+            try {
+                const url = this.showAddModal ? '/api/students' : `/api/students/${this.studentForm.id}`;
+                const method = this.showAddModal ? 'POST' : 'PUT';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(this.studentForm)
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to save student');
+                }
+                
+                if (this.showAddModal && result.data && result.data.loginCredentials) {
+                    // Show modern password modal for new students
+                    this.newStudentCredentials = result.data.loginCredentials;
+                    this.showPasswordModal = true;
+                    this.showToast('Student created successfully!', 'success');
+                } else {
+                    this.showToast(this.showAddModal ? 'Student added successfully' : 'Student updated successfully', 'success');
+                }
+                
+                this.closeModal();
+                await this.loadStudents();
+                
+            } catch (error) {
+                console.error('Failed to save student:', error);
+                this.showToast(error.message || 'Failed to save student', 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        async resetPassword(student) {
+            // Show modern confirmation modal instead of browser popup
+            this.studentToReset = student;
+            this.showResetPasswordModal = true;
+        },
+
+        async confirmPasswordReset() {
+            if (!this.studentToReset) return;
+            
+            this.resetting = true;
+            try {
+                const response = await fetch(`/api/students/${this.studentToReset.id}/reset-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to reset password');
+                }
+                
+                // Show password in modern modal instead of alert
+                this.newStudentCredentials = {
+                    username: this.studentToReset.guardianPhone || this.studentToReset.phoneNumber,
+                    password: result.data.newPassword,
+                    note: 'Student logs in with Parent Phone + this new password'
+                };
+                
+                // Close reset modal and show password modal
+                this.showResetPasswordModal = false;
+                this.showPasswordModal = true;
+                this.showToast('Password reset successfully!', 'success');
+                
+                // Update the student's display password in the list
+                const studentIndex = this.students.findIndex(s => s.id === this.studentToReset.id);
+                if (studentIndex !== -1) {
+                    this.students[studentIndex].displayPassword = result.data.newPassword;
+                    this.filterStudents(); // Refresh the filtered list
+                }
+                
+            } catch (error) {
+                console.error('Failed to reset password:', error);
+                this.showToast('Failed to reset password: ' + error.message, 'error');
+            } finally {
+                this.resetting = false;
+            }
+        },
+
+        deleteStudent(student) {
+            this.studentToDelete = student;
+            this.showDeleteModal = true;
+        },
+
+        async archiveStudent(student) {
+            const reason = prompt(`Archive "${student.firstName} ${student.lastName}"?\n\nOptional reason (press OK to continue):`);
+            
+            if (reason === null) {
+                // User cancelled
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/students/${student.id}/archive`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        reason: reason || 'Archived by teacher'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to archive student');
+                }
+                
+                this.showToast(`Student "${student.firstName} ${student.lastName}" archived successfully`, 'success');
+                await this.loadStudents();
+            } catch (error) {
+                console.error('Failed to archive student:', error);
+                this.showToast('Failed to archive student: ' + error.message, 'error');
+            }
+        },
+
+        async confirmDelete() {
+            if (!this.studentToDelete) return;
+            
+            this.deleting = true;
+            try {
+                const response = await fetch(`/api/students/${this.studentToDelete.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to delete student');
+                }
+                
+                this.showToast('Student deleted successfully', 'success');
+                this.showDeleteModal = false;
+                this.studentToDelete = null;
+                await this.loadStudents();
+            } catch (error) {
+                console.error('Failed to delete student:', error);
+                this.showToast('Failed to delete student', 'error');
+            } finally {
+                this.deleting = false;
+            }
+        },
+
+        closeModal() {
+            this.showAddModal = false;
+            this.showEditModal = false;
+            this.studentForm = {
+                id: null,
+                firstName: '',
+                lastName: '',
+                guardianName: '',
+                guardianPhone: '',
+                motherName: '',
+                address: '',
+                school: '',
+                batchId: ''
+            };
+        }
+    }
+}
+</script>

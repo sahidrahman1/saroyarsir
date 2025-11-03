@@ -1,0 +1,1573 @@
+{% extends "base.html" %}
+
+{% block title %}Teacher Dashboard - GS Student Nursing Center by Golam Sarowar Sir{% endblock %}
+
+{% block extra_head %}
+<script src="https://unpkg.com/htmx.org@1.9.6"></script>
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+{% endblock %}
+
+{% block content %}
+<div x-data="teacherDashboard()" class="flex h-screen bg-gray-50">
+    <!-- Sidebar -->
+    <div class="w-64 bg-white shadow-lg border-r border-gray-200" :class="{ '-translate-x-full': !sidebarOpen }" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="-translate-x-full"
+         x-transition:enter-end="translate-x-0"
+         x-transition:leave="transition ease-in duration-300"
+         x-transition:leave-start="translate-x-0"
+         x-transition:leave-end="-translate-x-full">
+        
+        <!-- Sidebar Header -->
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-graduation-cap text-white text-lg"></i>
+                </div>
+                <div class="ml-3">
+                    <h2 class="text-lg font-semibold text-gray-900">Teacher Panel</h2>
+                    <p class="text-sm text-blue-600 font-semibold">Management Dashboard</p>
+                    <p class="text-xs text-gray-500">Welcome, {{ user.first_name }} {{ user.last_name }}!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="mt-6">
+            <div class="px-3 space-y-1">
+                <template x-for="item in menuItems" :key="item.id">
+                    <button 
+                        @click="activeSection = item.id"
+                        :class="{
+                            'bg-blue-50 border-r-2 border-blue-500 text-blue-700': activeSection === item.id,
+                            'text-gray-600 hover:bg-gray-50 hover:text-gray-900': activeSection !== item.id
+                        }"
+                        class="w-full flex items-center px-3 py-2 text-sm font-medium rounded-l-md transition-colors duration-200">
+                        <i :class="item.icon" class="mr-3 text-lg"></i>
+                        <span x-text="item.title"></span>
+                    </button>
+                </template>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="flex items-center justify-between px-6 py-4">
+                <!-- Mobile menu button -->
+                <button @click="sidebarOpen = !sidebarOpen" class="md:hidden p-2 rounded-md text-gray-400 hover:bg-gray-100">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <!-- Spacer for desktop -->
+                <div class="hidden md:block"></div>
+
+                <!-- Header Actions -->
+                <div class="flex items-center space-x-4 ml-auto">
+                    <!-- SMS Balance Display -->
+                    <div class="flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-lg">
+                        <i class="fas fa-sms text-blue-600"></i>
+                        <span class="text-sm font-semibold text-gray-700">SMS Balance:</span>
+                        <span class="text-sm font-bold text-blue-600" x-text="smsBalance + ' SMS'"></span>
+                    </div>
+                    
+                    <!-- Theme Toggle -->
+                    <button @click="toggleTheme()" class="p-2 rounded-md text-gray-400 hover:bg-gray-100">
+                        <i :class="isDark ? 'fas fa-sun' : 'fas fa-moon'"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto p-6">
+            <!-- Dashboard Overview -->
+            <div x-show="activeSection === 'dashboard'" x-transition>
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Dashboard Overview</h2>
+                
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="card card-hover">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600">Total Students</p>
+                                <p class="text-2xl font-bold text-gray-900" x-text="stats.totalStudents || 0"></p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-users text-blue-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card card-hover">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600">Total Batches</p>
+                                <p class="text-2xl font-bold text-gray-900" x-text="stats.totalBatches || 0"></p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-graduation-cap text-green-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card card-hover">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600">Pending Fees</p>
+                                <p class="text-2xl font-bold text-gray-900">৳<span x-text="(stats.pendingFees || 0).toFixed(0)"></span></p>
+                            </div>
+                            <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-money-bill text-orange-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card card-hover">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600">SMS Count</p>
+                                <p class="text-2xl font-bold text-gray-900" x-text="stats.smsCount || 0"></p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-sms text-purple-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Management -->
+            <div x-show="activeSection === 'students'" x-transition>
+                {% include 'partials/student_management.html' %}
+            </div>
+
+            <!-- Batch Management -->
+            <div x-show="activeSection === 'batches'" x-transition>
+                {% include 'partials/batch_management.html' %}
+            </div>
+
+            <!-- Monthly Exams -->
+            <div x-show="activeSection === 'monthly-exams'" x-transition>
+                {% include 'partials/monthly_exam_management.html' %}
+            </div>
+
+            <!-- Attendance -->
+            <div x-show="activeSection === 'attendance'" x-transition>
+                {% include 'partials/attendance_management.html' %}
+            </div>
+
+            <!-- Fee Management -->
+            <div x-show="activeSection === 'fees'" x-transition>
+                {% include 'partials/fee_management_new.html' %}
+            </div>
+
+            <!-- SMS Management -->
+            <div x-show="activeSection === 'sms'" x-transition>
+                {% include 'partials/sms_management.html' %}
+            </div>
+
+            <!-- Online Resources -->
+            <div x-show="activeSection === 'online-resources'" x-transition>
+                {% include 'partials/document_management.html' %}
+            </div>
+
+            <!-- AI Question Builder -->
+            <div x-show="activeSection === 'ai-question-builder'" x-transition>
+                {% include 'partials/ai_questions.html' %}
+            </div>
+
+            <!-- Archive Management -->
+            <div x-show="activeSection === 'archive'" x-transition>
+                {% include 'partials/archive_management.html' %}
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+// Set global user role for use in partials
+window.userRole = '{{ user.role.value }}';
+console.log('User role set to:', window.userRole);
+
+function teacherDashboard() {
+    return {
+        activeSection: 'dashboard',
+        sidebarOpen: true,
+        isDark: false,
+        stats: {},
+        
+        // Monthly Exam Data
+        monthlyExams: [],
+        selectedMonthlyExam: null,
+        monthlyExamTab: 'overview',
+        individualExams: [],
+        openCreateMonthlyExamModal: false,
+        openCreateExamModal: false,
+        openMarksEntryModal: false,
+        showComprehensiveResults: false,
+        selectedExamForMarks: null,
+        marksEntryData: [],
+        monthlyResults: [],
+        smsBalance: 0,
+        rankingsGenerated: false, // Track if final rankings have been generated
+        createMonthlyExamForm: {
+            title: '',
+            month: new Date().getMonth() + 1,
+            year: new Date().getFullYear(),
+            batch_id: ''
+        },
+        createExamForm: {
+            title: '',
+            subject: '',
+            marks: 100,
+            exam_date: '',
+            duration: 60
+        },
+        batches: [],
+        
+        menuItems: [
+            { id: 'dashboard', title: 'Dashboard', icon: 'fas fa-tachometer-alt' },
+            { id: 'students', title: 'Students', icon: 'fas fa-users' },
+            { id: 'batches', title: 'Batches', icon: 'fas fa-graduation-cap' },
+            { id: 'monthly-exams', title: 'Monthly Exams', icon: 'fas fa-clipboard-list' },
+            { id: 'attendance', title: 'Attendance', icon: 'fas fa-calendar-check' },
+            { id: 'fees', title: 'Fees', icon: 'fas fa-money-bill' },
+            { id: 'sms', title: 'SMS', icon: 'fas fa-sms' },
+            { id: 'online-resources', title: 'Online Resources', icon: 'fas fa-book' },
+            { id: 'ai-question-builder', title: 'AI Questions', icon: 'fas fa-brain' },
+            { id: 'archive', title: 'Archive', icon: 'fas fa-archive' }
+        ],
+
+        init() {
+            this.loadStats();
+            this.loadBatches();
+            this.loadMonthlyExams();
+            this.loadSmsBalance();
+            // Auto-refresh stats every 5 seconds
+            setInterval(() => this.loadStats(), 5000);
+        },
+
+        async loadStats() {
+            try {
+                const response = await fetch('/api/dashboard/stats');
+                this.stats = await response.json();
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        },
+        
+        async loadBatches() {
+            try {
+                const response = await fetch('/api/batches');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.batches = data.data || [];
+                }
+            } catch (error) {
+                console.error('Failed to load batches:', error);
+            }
+        },
+        
+        async loadMonthlyExams() {
+            try {
+                const response = await fetch('/api/monthly-exams');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.monthlyExams = data.data || [];
+                }
+            } catch (error) {
+                console.error('Failed to load monthly exams:', error);
+            }
+        },
+        
+        async selectMonthlyExam(monthlyExam) {
+            this.selectedMonthlyExam = monthlyExam;
+            this.monthlyExamTab = 'management';
+            await this.loadIndividualExams(monthlyExam.id);
+        },
+        
+        async loadIndividualExams(examId) {
+            try {
+                const response = await fetch(`/api/monthly-exams/${examId}/individual-exams`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.individualExams = data.data?.individual_exams || [];
+                    
+                    // Check if rankings have been generated for this exam
+                    await this.checkRankingsStatus(examId);
+                }
+            } catch (error) {
+                console.error('Failed to load individual exams:', error);
+            }
+        },
+        
+        async checkRankingsStatus(examId) {
+            try {
+                const response = await fetch(`/api/monthly-exams/${examId}/rankings-status`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.rankingsGenerated = data.data?.has_rankings || false;
+                    console.log('Rankings generated status:', this.rankingsGenerated);
+                }
+            } catch (error) {
+                console.error('Failed to check rankings status:', error);
+                this.rankingsGenerated = false;
+            }
+        },
+        
+        async createMonthlyExam() {
+            try {
+                const response = await fetch('/api/monthly-exams', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(this.createMonthlyExamForm)
+                });
+                
+                if (response.ok) {
+                    this.openCreateMonthlyExamModal = false;
+                    this.resetCreateMonthlyExamForm();
+                    await this.loadMonthlyExams();
+                    // Show success message using custom dialog
+                    utils.showAlert('Monthly exam period created successfully!', 'success');
+                } else {
+                    const error = await response.json();
+                    utils.showAlert('Failed to create monthly exam: ' + (error.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Failed to create monthly exam:', error);
+                utils.showAlert('Failed to create monthly exam. Please check your connection and try again.', 'error');
+            }
+        },
+        
+        resetCreateMonthlyExamForm() {
+            this.createMonthlyExamForm = {
+                title: '',
+                month: new Date().getMonth() + 1,
+                year: new Date().getFullYear(),
+                batch_id: ''
+            };
+        },
+        
+        async createIndividualExam() {
+            if (!this.selectedMonthlyExam) {
+                utils.showAlert('Please select a monthly exam period first', 'warning');
+                return;
+            }
+            
+            try {
+                // Set default exam date to current date if not set
+                if (!this.createExamForm.exam_date) {
+                    this.createExamForm.exam_date = new Date().toISOString().split('T')[0];
+                }
+                
+                const response = await fetch(`/api/monthly-exams/${this.selectedMonthlyExam.id}/individual-exams`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(this.createExamForm)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    this.openCreateExamModal = false;
+                    this.resetCreateExamForm();
+                    await this.loadIndividualExams(this.selectedMonthlyExam.id);
+                    await this.loadMonthlyExams(); // Reload to get updated total marks
+                    
+                    utils.showAlert(`Individual exam created successfully! Monthly exam total is now ${result.data.monthly_exam_total} marks.`, 'success');
+                } else {
+                    const error = await response.json();
+                    utils.showAlert('Failed to create individual exam: ' + (error.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Failed to create individual exam:', error);
+                utils.showAlert('Failed to create individual exam. Please check your connection and try again.', 'error');
+            }
+        },
+        
+        async deleteIndividualExam(exam) {
+            if (!confirm(`Are you sure you want to delete "${exam.title}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            if (exam.marks_count > 0) {
+                utils.showAlert('Cannot delete this exam. Marks have already been entered.', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/monthly-exams/${this.selectedMonthlyExam.id}/individual-exams/${exam.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    await this.loadIndividualExams(this.selectedMonthlyExam.id);
+                    await this.loadMonthlyExams(); // Reload to get updated total marks
+                    
+                    utils.showAlert(`Individual exam deleted successfully! Monthly exam total is now ${result.data.monthly_exam_total} marks.`, 'success');
+                } else {
+                    const error = await response.json();
+                    utils.showAlert('Failed to delete individual exam: ' + (error.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Failed to delete individual exam:', error);
+                utils.showAlert('Failed to delete individual exam. Please check your connection and try again.', 'error');
+            }
+        },
+        
+        resetCreateExamForm() {
+            this.createExamForm = {
+                title: '',
+                subject: '',
+                marks: 100,
+                exam_date: '',
+                duration: 60
+            };
+        },
+        
+        calculateIndividualExamsTotal() {
+            if (!this.individualExams || this.individualExams.length === 0) {
+                return 0;
+            }
+            return this.individualExams.reduce((total, exam) => total + (exam.marks || 0), 0);
+        },
+        
+        openMarksEntry(exam) {
+            this.selectedExamForMarks = exam;
+            this.loadStudentsForMarksEntry(exam);
+            this.openMarksEntryModal = true;
+        },
+
+        async loadStudentsForMarksEntry(exam) {
+            try {
+                console.log('Loading students for batch:', this.selectedMonthlyExam.batch_id);
+                
+                // Load students from the batch
+                const response = await fetch(`/api/batches/${this.selectedMonthlyExam.batch_id}/students`);
+                console.log('Batch students response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Batch students response data:', data);
+                    
+                    const students = data.data?.students || [];
+                    console.log('Students extracted:', students);
+                    
+                    if (students.length === 0) {
+                        utils.showAlert('No students found in this batch. Please add students to the batch first.', 'warning');
+                        return;
+                    }
+                    
+                    // Load existing marks for this exam
+                    const marksResponse = await fetch(`/api/monthly-exams/${this.selectedMonthlyExam.id}/individual-exams/${exam.id}/marks`);
+                    let existingMarks = {};
+                    
+                    if (marksResponse.ok) {
+                        const marksData = await marksResponse.json();
+                        existingMarks = marksData.data?.marks || {};
+                        console.log('Existing marks:', existingMarks);
+                    }
+                    
+                    // Prepare marks entry data
+                    this.marksEntryData = students.map(student => ({
+                        student_id: student.id,
+                        student_name: student.full_name,
+                        student_phone: student.phoneNumber,
+                        marks_obtained: existingMarks[student.id]?.marks_obtained || ''
+                    }));
+                    
+                    console.log('Marks entry data prepared:', this.marksEntryData);
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Failed to load students:', errorData);
+                    utils.showAlert('Failed to load students: ' + (errorData.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Failed to load students:', error);
+                utils.showAlert('Failed to load students. Please check your connection and try again.', 'error');
+            }
+        },
+
+        async saveMarks(sendSms = false) {
+            if (!this.selectedExamForMarks || !this.selectedMonthlyExam) {
+                return;
+            }
+
+            try {
+                // First, check if user is still authenticated
+                const authResponse = await fetch('/api/auth/me');
+                if (!authResponse.ok) {
+                    utils.showAlert('Session expired. Please login again.', 'error');
+                    window.location.href = '/login';
+                    return;
+                }
+
+                // Validate marks
+                const invalidMarks = this.marksEntryData.filter(entry => {
+                    const marks = parseFloat(entry.marks_obtained);
+                    return isNaN(marks) || marks < 0 || marks > this.selectedExamForMarks.marks;
+                });
+
+                if (invalidMarks.length > 0) {
+                    utils.showAlert(`Invalid marks detected. Please check entries for: ${invalidMarks.map(s => s.student_name).join(', ')}`, 'warning');
+                    return;
+                }
+
+                // Prepare student data for the new API endpoint
+                const studentsData = this.marksEntryData.map(entry => ({
+                    user_id: entry.student_id,
+                    marks_obtained: parseFloat(entry.marks_obtained) || 0
+                }));
+
+                // Include SMS option in request
+                const requestData = {
+                    students: studentsData,
+                    send_sms: sendSms
+                };
+
+                console.log('Sending marks data:', requestData);
+                console.log('API URL:', `/api/monthly-exams/${this.selectedMonthlyExam.id}/individual-exams/${this.selectedExamForMarks.id}/marks`);
+
+                const response = await fetch(`/api/monthly-exams/${this.selectedMonthlyExam.id}/individual-exams/${this.selectedExamForMarks.id}/marks`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin', // Include cookies for session
+                    body: JSON.stringify(requestData)
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Success response:', result);
+                    this.openMarksEntryModal = false;
+                    await this.loadIndividualExams(this.selectedMonthlyExam.id);
+                    
+                    // Show success message with SMS info if applicable
+                    let message = `Marks saved successfully for ${result.data.exam_title}! ${result.data.saved_count} students updated.`;
+                    if (sendSms && result.data.sms_sent !== undefined) {
+                        message += ` SMS sent: ${result.data.sms_sent}, Failed: ${result.data.sms_failed}. Remaining SMS balance: ${result.data.remaining_sms_balance}`;
+                    }
+                    utils.showAlert(message, 'success');
+                    
+                    // Update SMS balance if available
+                    if (result.data.remaining_sms_balance !== undefined) {
+                        this.smsBalance = result.data.remaining_sms_balance;
+                    }
+                } else {
+                    const errorText = await response.text();
+                    console.error('Error response text:', errorText);
+                    let error = {};
+                    try {
+                        error = JSON.parse(errorText);
+                    } catch (e) {
+                        error = { message: errorText };
+                    }
+                    
+                    if (response.status === 401) {
+                        utils.showAlert('Session expired. Please login again.', 'error');
+                        window.location.href = '/login';
+                    } else {
+                        utils.showAlert('Failed to save marks: ' + (error.message || 'Unknown error'), 'error');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to save marks:', error);
+                utils.showAlert('Failed to save marks. Please check your connection and try again.', 'error');
+            }
+        },
+
+        viewComprehensiveResults() {
+            // Auto-select first exam if none is selected
+            if (!this.selectedMonthlyExam) {
+                if (this.monthlyExams && this.monthlyExams.length > 0) {
+                    this.selectedMonthlyExam = this.monthlyExams[0];
+                    console.log('Auto-selected first monthly exam:', this.selectedMonthlyExam);
+                } else {
+                    utils.showAlert('No monthly exams available. Please create one first.', 'warning');
+                    return;
+                }
+            }
+
+            // Set the global variable for the comprehensive results component
+            window.currentMonthlyExamId = this.selectedMonthlyExam.id;
+            console.log('Set window.currentMonthlyExamId to:', window.currentMonthlyExamId);
+            
+            // Show the comprehensive results modal
+            this.showComprehensiveResults = true;
+        },
+
+        async checkRankingsExist() {
+            if (!this.selectedMonthlyExam) {
+                this.rankingsGenerated = false;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/monthly-exams/${this.selectedMonthlyExam.id}/rankings-status`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.rankingsGenerated = data.data.has_rankings;
+                    console.log('Rankings exist:', this.rankingsGenerated);
+                } else {
+                    this.rankingsGenerated = false;
+                }
+            } catch (error) {
+                console.error('Failed to check rankings status:', error);
+                this.rankingsGenerated = false;
+            }
+        },
+
+        async generateRanking() {
+            if (!this.selectedMonthlyExam) {
+                if (window.utils) {
+                    window.utils.showToast('Please select a monthly exam first', 'warning');
+                } else {
+                    alert('Please select a monthly exam first');
+                }
+                return;
+            }
+
+            try {
+                console.log('🔄 Generating ranking for exam ID:', this.selectedMonthlyExam.id);
+                if (window.utils) {
+                    window.utils.showToast('Generating rankings...', 'info');
+                }
+                
+                const response = await fetch(`/api/monthly-exams/${this.selectedMonthlyExam.id}/generate-ranking`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'  // Important: include session cookies
+                });
+                
+                console.log('📡 Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Rankings generated:', data);
+                    
+                    // Update rankings status
+                    this.rankingsGenerated = true;
+                    
+                    // Refresh the comprehensive results to show the saved rankings
+                    await this.viewComprehensiveResults();
+                    
+                    if (window.utils) {
+                        window.utils.showToast(`Final rankings generated and saved successfully! ${data.data.rankings_count} students ranked.`, 'success');
+                    } else {
+                        alert(`Success! ${data.data.rankings_count} students ranked.`);
+                    }
+                } else {
+                    const errorText = await response.text();
+                    console.error('❌ Server error:', response.status, errorText);
+                    try {
+                        const error = JSON.parse(errorText);
+                        if (window.utils) {
+                            window.utils.showToast('Failed to generate ranking: ' + (error.message || 'Unknown error'), 'error');
+                        } else {
+                            alert('Failed: ' + (error.message || 'Unknown error'));
+                        }
+                    } catch {
+                        if (window.utils) {
+                            window.utils.showToast(`Failed to generate ranking. Server returned status ${response.status}`, 'error');
+                        } else {
+                            alert(`Failed. Status: ${response.status}`);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Network/JavaScript error:', error);
+                if (window.utils) {
+                    window.utils.showToast('Failed to generate ranking: ' + error.message, 'error');
+                } else {
+                    alert('Failed: ' + error.message);
+                }
+            }
+        },
+
+        async downloadResults() {
+            if (!this.selectedMonthlyExam || this.monthlyResults.length === 0) {
+                utils.showAlert('No results to download. Generate ranking first.', 'warning');
+                return;
+            }
+
+            try {
+                // Generate CSV content
+                const headers = ['Rank', 'Student Name', 'Phone', 'Total Marks', 'Percentage', 'Grade', 'GPA'];
+                const csvContent = [
+                    headers.join(','),
+                    ...this.monthlyResults.map((result) => [
+                        result.position,
+                        `"${result.student_name || 'N/A'}"`,
+                        result.student_phone || 'N/A',
+                        `${result.total_obtained}/${result.total_marks}`,
+                        `${result.percentage.toFixed(1)}%`,
+                        result.grade,
+                        result.gpa
+                    ].join(','))
+                ].join('\n');
+
+                // Create and download file
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `${this.selectedMonthlyExam.title}_Results.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                utils.showAlert('Results downloaded successfully!', 'success');
+            } catch (error) {
+                console.error('Failed to download results:', error);
+                utils.showAlert('Failed to download results. Please try again.', 'error');
+            }
+        },
+
+        async loadSmsBalance() {
+            try {
+                let response = await fetch('/api/sms/balance?_=' + Date.now(), {
+                    credentials: 'include',
+                    cache: 'no-cache'
+                });
+                
+                // Fallback to no-auth endpoint if auth fails
+                if (!response.ok) {
+                    response = await fetch('/api/sms/balance-check?_=' + Date.now(), {
+                        cache: 'no-cache'
+                    });
+                }
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const data = result.data || result;
+                    this.smsBalance = data.balance || 0;
+                    console.log('Dashboard SMS Balance loaded:', this.smsBalance);
+                } else {
+                    console.error('Failed to load SMS balance - Status:', response.status);
+                    this.smsBalance = 0;
+                }
+            } catch (error) {
+                console.error('Failed to load SMS balance:', error);
+                this.smsBalance = 0;
+            }
+        },
+
+        toggleTheme() {
+            this.isDark = !this.isDark;
+            document.documentElement.classList.toggle('dark', this.isDark);
+            localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
+        }
+    }
+}
+
+// Attendance Manager Component
+function attendanceManager() {
+    return {
+        // State variables
+        activeTab: 'mark',
+        loading: false,
+        saving: false,
+        smsBalance: 0,
+        
+        // Get Bangladesh date (UTC+6)
+        getBangladeshDate() {
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const bdTime = new Date(utc + (6 * 60 * 60 * 1000)); // UTC+6
+            return bdTime.toISOString().split('T')[0];
+        },
+        
+        // Mark Attendance Tab
+        selectedBatchId: '',
+        selectedDate: '',
+        attendanceStudents: [],
+        sendSmsToParents: false,
+        
+        // Monthly Sheet Tab  
+        monthlyBatchId: '',
+        selectedMonth: new Date().getMonth() + 1,
+        selectedYear: new Date().getFullYear(),
+        monthlyData: {
+            students: [],
+            days: []
+        },
+        
+        // Fee Management variables
+        feeLoading: false,
+        feeErrorMessage: '',
+        feeSelectedBatchId: '',
+        feeSelectedYear: new Date().getFullYear(),
+        feeStudents: [],
+        fees: {}, // Structure: {student_id: {month: {id, amount}}}
+        
+        // Data
+        batches: [],
+
+        // Initialize
+        async init() {
+            // Set Bangladesh date
+            this.selectedDate = this.getBangladeshDate();
+            await this.loadBatches();
+            await this.loadSmsBalance();
+        },
+
+        // Computed properties
+        get presentCount() {
+            return this.attendanceStudents.filter(s => s.status === 'present').length;
+        },
+
+        get absentCount() {
+            return this.attendanceStudents.filter(s => s.status === 'absent').length;
+        },
+
+        get attendancePercentage() {
+            const total = this.attendanceStudents.length;
+            if (total === 0) return 0;
+            return Math.round((this.presentCount / total) * 100);
+        },
+
+        // Error message state
+        errorMessage: '',
+
+        // Load batches
+        async loadBatches() {
+            try {
+                this.loading = true;
+                this.errorMessage = '';
+                
+                const response = await fetch('/api/batches', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin' // Include cookies for session
+                });
+                
+                console.log('Batches API response status:', response.status);
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        this.errorMessage = 'Session expired. Please login again.';
+                        return;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Batches API response data:', data);
+                
+                // Handle different response formats
+                if (data.success && data.data) {
+                    this.batches = data.data;
+                } else if (Array.isArray(data)) {
+                    this.batches = data;
+                } else if (data.batches) {
+                    this.batches = data.batches;
+                } else {
+                    this.batches = [];
+                }
+                
+                console.log('Loaded batches:', this.batches);
+                
+            } catch (error) {
+                console.error('Failed to load batches:', error);
+                this.errorMessage = 'Failed to load batches: ' + error.message;
+                this.batches = [];
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // Get student initial
+        getStudentInitial(student) {
+            if (student.full_name) {
+                return student.full_name.charAt(0).toUpperCase();
+            } else if (student.first_name) {
+                return student.first_name.charAt(0).toUpperCase();
+            } else if (student.student_name) {
+                return student.student_name.charAt(0).toUpperCase();
+            }
+            return 'S';
+        },
+
+        // Mark all absent
+        markAllAbsent() {
+            this.attendanceStudents.forEach(student => {
+                student.status = 'absent';
+            });
+        },
+
+        // Refresh students
+        async refreshStudents() {
+            await this.loadStudentsForAttendance();
+        },
+
+        // Load SMS balance
+        async loadSmsBalance() {
+            try {
+                let response = await fetch('/api/sms/balance?_=' + Date.now(), {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                    cache: 'no-cache'
+                });
+                
+                // Fallback to no-auth endpoint
+                if (!response.ok) {
+                    response = await fetch('/api/sms/balance-check?_=' + Date.now(), {
+                        cache: 'no-cache'
+                    });
+                }
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const data = result.data || result;
+                    this.smsBalance = data.balance || 0;
+                    console.log('Attendance SMS Balance loaded:', this.smsBalance);
+                } else {
+                    console.error('Failed to load SMS balance - Status:', response.status);
+                    this.smsBalance = 0;
+                }
+            } catch (error) {
+                console.error('Failed to load SMS balance:', error);
+                this.smsBalance = 0;
+            }
+        },
+
+        // Load students for attendance marking
+        async loadStudentsForAttendance() {
+            if (!this.selectedBatchId || !this.selectedDate) {
+                this.attendanceStudents = [];
+                return;
+            }
+
+            try {
+                this.loading = true;
+                this.errorMessage = '';
+                
+                console.log(`Loading students for batch ID: ${this.selectedBatchId}, date: ${this.selectedDate}`);
+                
+                // Get students in batch
+                const studentsResponse = await fetch(`/api/batches/${this.selectedBatchId}/students`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin' // Include cookies for session
+                });
+                
+                console.log('Students API response status:', studentsResponse.status);
+                
+                if (!studentsResponse.ok) {
+                    if (studentsResponse.status === 401) {
+                        this.errorMessage = 'Session expired. Please login again.';
+                        return;
+                    }
+                    throw new Error(`Failed to load students: HTTP ${studentsResponse.status}`);
+                }
+                
+                const studentsData = await studentsResponse.json();
+                console.log('Students API response data:', studentsData);
+                
+                // Handle different response formats
+                let students = [];
+                if (studentsData.success && studentsData.data) {
+                    // Check if data contains students array or is the students array itself
+                    if (studentsData.data.students && Array.isArray(studentsData.data.students)) {
+                        students = studentsData.data.students;
+                    } else if (Array.isArray(studentsData.data)) {
+                        students = studentsData.data;
+                    } else {
+                        students = [];
+                    }
+                } else if (Array.isArray(studentsData)) {
+                    students = studentsData;
+                } else if (studentsData.students && Array.isArray(studentsData.students)) {
+                    students = studentsData.students;
+                } else {
+                    students = [];
+                }
+                
+                console.log('Parsed students array:', students);
+
+                // Get existing attendance for the date
+                const attendanceResponse = await fetch(`/api/attendance?batch_id=${this.selectedBatchId}&date=${this.selectedDate}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin' // Include cookies for session
+                });
+                
+                let existingAttendance = [];
+                
+                if (attendanceResponse.ok) {
+                    const attendanceData = await attendanceResponse.json();
+                    console.log('Attendance API response data:', attendanceData);
+                    
+                    if (attendanceData.success && attendanceData.data) {
+                        existingAttendance = attendanceData.data;
+                    } else if (Array.isArray(attendanceData)) {
+                        existingAttendance = attendanceData;
+                    } else {
+                        existingAttendance = [];
+                    }
+                }
+
+                // Merge student data with attendance status
+                this.attendanceStudents = students.map(student => {
+                    const attendance = existingAttendance.find(a => 
+                        a.userId === student.id || 
+                        a.user_id === student.id ||
+                        a.studentId === student.id ||
+                        a.student_id === student.id
+                    );
+                    
+                    // Create display name from available fields
+                    let displayName = 'Unknown Student';
+                    if (student.full_name) {
+                        displayName = student.full_name;
+                    } else if (student.first_name && student.last_name) {
+                        displayName = `${student.first_name} ${student.last_name}`;
+                    } else if (student.first_name) {
+                        displayName = student.first_name;
+                    } else if (student.username) {
+                        displayName = student.username;
+                    }
+                    
+                    return {
+                        id: student.id,
+                        full_name: displayName,
+                        student_name: displayName,
+                        student_id: student.student_id || student.id,
+                        phone: student.phoneNumber || student.phone,
+                        guardian_phone: student.guardian_phone,
+                        email: student.email,
+                        roll_number: student.roll_number,  // Roll number from most recent monthly exam
+                        status: attendance ? attendance.status : 'absent'
+                    };
+                });
+                
+                // Students are already sorted by roll number from the API
+                console.log('Processed attendance students (sorted by roll number):', this.attendanceStudents);
+
+            } catch (error) {
+                console.error('Failed to load students for attendance:', error);
+                this.errorMessage = 'Failed to load students: ' + error.message;
+                this.attendanceStudents = [];
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // Mark individual student attendance
+        markAttendance(student, status) {
+            const index = this.attendanceStudents.findIndex(s => s.id === student.id);
+            if (index !== -1) {
+                this.attendanceStudents[index].status = status;
+            }
+        },
+
+        // Mark all students present
+        markAllPresent() {
+            this.attendanceStudents.forEach(student => {
+                student.status = 'present';
+            });
+        },
+
+        // Save attendance
+        async saveAttendance(sendSms = false) {
+            if (!this.selectedBatchId || !this.selectedDate || this.attendanceStudents.length === 0) {
+                this.errorMessage = 'Please select batch, date and ensure students are loaded';
+                return;
+            }
+
+            try {
+                this.saving = true;
+                this.errorMessage = '';
+
+                // Prepare attendance data
+                const attendanceData = this.attendanceStudents.map(student => ({
+                    userId: student.id,
+                    status: student.status
+                }));
+
+                // Save attendance
+                const response = await fetch('/api/attendance/bulk', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin', // Include cookies for session
+                    body: JSON.stringify({
+                        batchId: parseInt(this.selectedBatchId),
+                        date: this.selectedDate,
+                        attendanceData: attendanceData,
+                        sendSms: sendSms
+                    })
+                });
+
+                console.log('Save attendance response status:', response.status);
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        this.errorMessage = 'Session expired. Please login again.';
+                        return;
+                    }
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to save attendance');
+                }
+
+                const result = await response.json();
+                console.log('Save attendance result:', result);
+                
+                if (sendSms) {
+                    this.errorMessage = `Attendance saved and ${this.presentCount + this.absentCount} SMS sent!`;
+                    await this.loadSmsBalance(); // Refresh SMS balance
+                } else {
+                    this.errorMessage = 'Attendance saved successfully!';
+                }
+
+            } catch (error) {
+                console.error('Failed to save attendance:', error);
+                this.errorMessage = error.message || 'Failed to save attendance';
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        // Save attendance and send SMS to absent students only
+        async saveAttendanceAndSendSmsToAbsentOnly() {
+            if (!this.selectedBatchId || !this.selectedDate || this.attendanceStudents.length === 0) {
+                this.errorMessage = 'Please select batch, date and ensure students are loaded';
+                return;
+            }
+
+            const absentStudents = this.attendanceStudents.filter(s => s.status === 'absent');
+            if (absentStudents.length === 0) {
+                this.errorMessage = 'No absent students to send SMS to';
+                return;
+            }
+
+            if (this.smsBalance < absentStudents.length) {
+                this.errorMessage = `Insufficient SMS balance. Need ${absentStudents.length} SMS, but only ${this.smsBalance} available`;
+                return;
+            }
+
+            try {
+                this.saving = true;
+                this.errorMessage = '';
+
+                // Prepare attendance data
+                const attendanceData = this.attendanceStudents.map(student => ({
+                    userId: student.id,
+                    status: student.status
+                }));
+
+                // Save attendance and send SMS to absent only
+                const response = await fetch('/api/attendance/bulk-absent-sms', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        batchId: parseInt(this.selectedBatchId),
+                        date: this.selectedDate,
+                        attendanceData: attendanceData
+                    })
+                });
+
+                console.log('Save attendance (absent SMS) response status:', response.status);
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        this.errorMessage = 'Session expired. Please login again.';
+                        return;
+                    }
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to save attendance and send SMS');
+                }
+
+                const result = await response.json();
+                console.log('Save attendance (absent SMS) result:', result);
+                
+                this.errorMessage = `Attendance saved and ${absentStudents.length} SMS sent to absent students!`;
+                await this.loadSmsBalance(); // Refresh SMS balance
+
+            } catch (error) {
+                console.error('Failed to save attendance and send SMS:', error);
+                this.errorMessage = error.message || 'Failed to save attendance and send SMS';
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        // Load monthly attendance data
+        async loadMonthlyAttendance() {
+            if (!this.monthlyBatchId) {
+                this.monthlyData = { students: [], days: [] };
+                return;
+            }
+
+            try {
+                this.loading = true;
+                this.errorMessage = '';
+                
+                console.log(`Loading monthly attendance for batch: ${this.monthlyBatchId}, month: ${this.selectedMonth}, year: ${this.selectedYear}`);
+
+                const response = await fetch(`/api/attendance/monthly?batch_id=${this.monthlyBatchId}&month=${this.selectedMonth}&year=${this.selectedYear}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin' // Include cookies for session
+                });
+                
+                console.log('Monthly attendance API response status:', response.status);
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        this.errorMessage = 'Session expired. Please login again.';
+                        return;
+                    }
+                    throw new Error(`Failed to load monthly attendance: HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Monthly attendance API response data:', data);
+                
+                if (data.success && data.data) {
+                    this.monthlyData = data.data;
+                } else {
+                    this.monthlyData = { students: [], days: [] };
+                }
+                
+                console.log('Processed monthly data:', this.monthlyData);
+
+            } catch (error) {
+                console.error('Failed to load monthly attendance:', error);
+                this.errorMessage = 'Failed to load monthly attendance: ' + error.message;
+                this.monthlyData = { students: [], days: [] };
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // Get month name
+        getMonthName(month) {
+            const months = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+            return months[month - 1] || '';
+        },
+
+        // Get attendance class for styling
+        getAttendanceClass(status) {
+            switch (status) {
+                case 'present':
+                    return 'bg-green-500 text-white';
+                case 'absent':
+                    return 'bg-red-500 text-white';
+                case 'late':
+                    return 'bg-yellow-500 text-white';
+                default:
+                    return 'bg-gray-200 text-gray-500';
+            }
+        },
+
+        // Get attendance symbol
+        getAttendanceSymbol(status) {
+            switch (status) {
+                case 'present':
+                    return 'P';
+                case 'absent':
+                    return 'A';
+                case 'late':
+                    return 'L';
+                default:
+                    return '-';
+            }
+        },
+
+        // ========== FEE MANAGEMENT FUNCTIONS ==========
+        
+        // Load fee data for selected batch and year
+        async loadFeeData() {
+            if (!this.feeSelectedBatchId) {
+                this.feeStudents = [];
+                this.fees = {};
+                return;
+            }
+
+            try {
+                this.feeLoading = true;
+                this.feeErrorMessage = '';
+                
+                console.log('Loading fee data for batch:', this.feeSelectedBatchId, 'year:', this.feeSelectedYear);
+                
+                // Load students in batch
+                const studentsResponse = await fetch(`/api/batches/${this.feeSelectedBatchId}/students`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                console.log('Students response status:', studentsResponse.status);
+                
+                if (!studentsResponse.ok) {
+                    throw new Error(`Failed to load students: HTTP ${studentsResponse.status}`);
+                }
+                
+                const studentsData = await studentsResponse.json();
+                console.log('Fee Students raw data:', studentsData);
+                
+                // Parse students
+                let students = [];
+                if (studentsData.success && studentsData.data) {
+                    if (studentsData.data.students && Array.isArray(studentsData.data.students)) {
+                        students = studentsData.data.students;
+                    } else if (Array.isArray(studentsData.data)) {
+                        students = studentsData.data;
+                    }
+                }
+                
+                console.log('Parsed students:', students);
+                
+                this.feeStudents = students.map(s => ({
+                    id: s.id,
+                    name: s.fullName || s.full_name || `${s.firstName || s.first_name || ''} ${s.lastName || s.last_name || ''}`.trim()
+                }));
+                
+                console.log('Fee students array:', this.feeStudents);
+                
+                // Load existing fees for this batch and year
+                const feesResponse = await fetch(`/api/fees?batch_id=${this.feeSelectedBatchId}&year=${this.feeSelectedYear}&per_page=1000`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                if (feesResponse.ok) {
+                    const feesData = await feesResponse.json();
+                    console.log('Fees data:', feesData);
+                    
+                    if (feesData.success && feesData.data) {
+                        const feesList = Array.isArray(feesData.data) ? feesData.data : [];
+                        
+                        // Organize fees by student and month
+                        this.fees = {};
+                        feesList.forEach(fee => {
+                            const dueDate = new Date(fee.dueDate || fee.due_date);
+                            const month = dueDate.getMonth() + 1;
+                            const userId = fee.userId || fee.user_id;
+                            
+                            if (!this.fees[userId]) {
+                                this.fees[userId] = {};
+                            }
+                            
+                            this.fees[userId][month] = {
+                                id: fee.id,
+                                amount: parseFloat(fee.amount || 0)
+                            };
+                        });
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Failed to load fee data:', error);
+                this.feeErrorMessage = 'Failed to load fee data: ' + error.message;
+            } finally {
+                this.feeLoading = false;
+                console.log('Fee loading complete. Students count:', this.feeStudents.length);
+            }
+        },
+
+        // Get fee amount for a student and month
+        getFeeAmount(studentId, month) {
+            if (this.fees[studentId] && this.fees[studentId][month]) {
+                return this.fees[studentId][month].amount;
+            }
+            return '';
+        },
+
+        // Update fee in memory
+        updateFee(studentId, month, value) {
+            const amount = parseFloat(value) || 0;
+            
+            if (!this.fees[studentId]) {
+                this.fees[studentId] = {};
+            }
+            
+            if (!this.fees[studentId][month]) {
+                this.fees[studentId][month] = { amount: 0 };
+            }
+            
+            this.fees[studentId][month].amount = amount;
+        },
+
+        // Save fee to server
+        async saveFee(studentId, month, event) {
+            if (!this.fees[studentId] || !this.fees[studentId][month]) {
+                return;
+            }
+
+            const feeData = this.fees[studentId][month];
+            const amount = feeData.amount;
+
+            // Skip if amount is 0 or empty
+            if (!amount || amount <= 0) {
+                return;
+            }
+
+            try {
+                // Calculate due date (last day of month)
+                const lastDay = new Date(this.feeSelectedYear, month, 0).getDate();
+                const dueDate = `${this.feeSelectedYear}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+                let response;
+                
+                if (feeData.id) {
+                    // Update existing fee
+                    response = await fetch(`/api/fees/${feeData.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            amount: amount,
+                            due_date: dueDate
+                        })
+                    });
+                } else {
+                    // Create new fee
+                    response = await fetch('/api/fees', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            user_id: studentId,
+                            batch_id: this.feeSelectedBatchId,
+                            amount: amount,
+                            due_date: dueDate
+                        })
+                    });
+                }
+
+                if (!response.ok) {
+                    throw new Error(`Failed to save fee: HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('Fee saved:', result);
+
+                // Update fee ID if it was newly created
+                if (result.success && result.data && result.data.fee) {
+                    this.fees[studentId][month].id = result.data.fee.id;
+                }
+
+                // Show success briefly
+                event.target.style.backgroundColor = '#d4edda';
+                setTimeout(() => {
+                    event.target.style.backgroundColor = '';
+                }, 500);
+
+            } catch (error) {
+                console.error('Failed to save fee:', error);
+                alert('Failed to save fee: ' + error.message);
+                
+                // Show error
+                event.target.style.backgroundColor = '#f8d7da';
+                setTimeout(() => {
+                    event.target.style.backgroundColor = '';
+                }, 1000);
+            }
+        },
+
+        // Calculate total for a student
+        getStudentTotal(studentId) {
+            if (!this.fees[studentId]) {
+                return 0;
+            }
+            
+            let total = 0;
+            for (let month in this.fees[studentId]) {
+                total += this.fees[studentId][month].amount || 0;
+            }
+            return total;
+        },
+
+        // Download CSV
+        downloadFeeCSV() {
+            if (!this.feeSelectedBatchId || this.feeStudents.length === 0) {
+                alert('Please select a batch with students');
+                return;
+            }
+
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            // Prepare CSV data
+            let csv = 'Student Name';
+            months.forEach(month => {
+                csv += ',' + month;
+            });
+            csv += ',Total\n';
+
+            // Add data rows
+            this.feeStudents.forEach(student => {
+                csv += `"${student.name}"`;
+                for (let month = 1; month <= 12; month++) {
+                    const amount = this.getFeeAmount(student.id, month);
+                    csv += ',' + (amount || '0');
+                }
+                csv += ',' + this.getStudentTotal(student.id).toFixed(2);
+                csv += '\n';
+            });
+
+            // Create download link
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `fees_${this.feeSelectedYear}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+    }
+}
+</script>
+{% endblock %}

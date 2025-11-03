@@ -1,0 +1,431 @@
+<div x-data="smsManagement()" x-init="loadData()" class="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    
+    <!-- Professional Top Bar -->
+    <div class="bg-white border-b shadow-sm">
+        <div class="px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-lg shadow-md">
+                    <i class="fas fa-sms text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">SMS Template Manager</h1>
+                    <p class="text-sm text-gray-500">Create and customize SMS templates for automated notifications</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-right">
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">SMS Balance</div>
+                    <div class="text-2xl font-bold" :class="smsCount < 10 ? 'text-red-600' : 'text-green-600'" x-text="smsCount"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content with Sidebar Layout -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Sidebar - Template List -->
+        <div class="w-80 bg-white border-r overflow-y-auto">
+            <div class="p-4">
+                <div class="mb-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-gray-800 uppercase text-xs tracking-wide">Templates</h3>
+                        <span class="text-xs text-gray-500">4 active</span>
+                    </div>
+                    <div class="text-xs text-gray-600 bg-blue-50 border border-blue-200 rounded p-2">
+                        <i class="fas fa-info-circle text-blue-500"></i> Click to edit • Max 130 chars
+                    </div>
+                </div>
+
+                <!-- Attendance Section -->
+                <div class="mb-6">
+                    <div class="flex items-center space-x-2 mb-3">
+                        <div class="w-1 h-6 bg-green-500 rounded"></div>
+                        <h4 class="font-semibold text-gray-700 text-sm">ATTENDANCE</h4>
+                    </div>
+                    
+                    <div @click="selectTemplate('attendance_present')" 
+                         :class="selectedTemplateId === 'attendance_present' ? 'bg-blue-50 border-blue-500' : 'bg-gray-50 border-gray-200'"
+                         class="border-l-4 rounded-r mb-3 p-3 cursor-pointer hover:shadow-md transition-all">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center">
+                                <span class="bg-green-500 text-white text-xs px-2 py-1 rounded mr-2">✓</span>
+                                <span class="font-medium text-sm">Present</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                        </div>
+                        <div class="text-xs text-gray-600 line-clamp-2" x-text="templates.find(t => t.id === 'attendance_present')?.message?.substring(0, 60) + '...'"></div>
+                    </div>
+
+                    <div @click="selectTemplate('attendance_absent')" 
+                         :class="selectedTemplateId === 'attendance_absent' ? 'bg-blue-50 border-blue-500' : 'bg-gray-50 border-gray-200'"
+                         class="border-l-4 rounded-r mb-3 p-3 cursor-pointer hover:shadow-md transition-all">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center">
+                                <span class="bg-red-500 text-white text-xs px-2 py-1 rounded mr-2">✗</span>
+                                <span class="font-medium text-sm">Absent</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                        </div>
+                        <div class="text-xs text-gray-600 line-clamp-2" x-text="templates.find(t => t.id === 'attendance_absent')?.message?.substring(0, 60) + '...'"></div>
+                    </div>
+                </div>
+
+                <!-- Exam Section -->
+                <div class="mb-6">
+                    <div class="flex items-center space-x-2 mb-3">
+                        <div class="w-1 h-6 bg-blue-500 rounded"></div>
+                        <h4 class="font-semibold text-gray-700 text-sm">EXAMS</h4>
+                    </div>
+                    
+                    <div @click="selectTemplate('exam_good')" 
+                         :class="selectedTemplateId === 'exam_good' ? 'bg-blue-50 border-blue-500' : 'bg-gray-50 border-gray-200'"
+                         class="border-l-4 rounded-r mb-3 p-3 cursor-pointer hover:shadow-md transition-all">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center">
+                                <span class="bg-green-500 text-white text-xs px-2 py-1 rounded mr-2">A+</span>
+                                <span class="font-medium text-sm">Good Performance</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                        </div>
+                        <div class="text-xs text-gray-600 line-clamp-2" x-text="templates.find(t => t.id === 'exam_good')?.message?.substring(0, 60) + '...'"></div>
+                    </div>
+
+                    <div @click="selectTemplate('exam_poor')" 
+                         :class="selectedTemplateId === 'exam_poor' ? 'bg-blue-50 border-blue-500' : 'bg-gray-50 border-gray-200'"
+                         class="border-l-4 rounded-r mb-3 p-3 cursor-pointer hover:shadow-md transition-all">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center">
+                                <span class="bg-yellow-500 text-white text-xs px-2 py-1 rounded mr-2">!</span>
+                                <span class="font-medium text-sm">Needs Improvement</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                        </div>
+                        <div class="text-xs text-gray-600 line-clamp-2" x-text="templates.find(t => t.id === 'exam_poor')?.message?.substring(0, 60) + '...'"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Editor Area -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            
+            <!-- Editor Toolbar -->
+            <div class="bg-white border-b px-6 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <h3 class="font-bold text-gray-800" x-text="getCurrentTemplate()?.name || 'Select a template'"></h3>
+                    <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full" x-text="'Used in: ' + getCurrentTemplate()?.category"></span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="text-sm" :class="editValidation.is_valid ? 'text-green-600' : 'text-red-600'">
+                        <i :class="editValidation.is_valid ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle'"></i>
+                        <span class="font-mono font-bold" x-text="editValidation.char_count"></span>/130
+                    </div>
+                    <button @click="saveTemplate()" :disabled="!selectedTemplateId || !editValidation.is_valid || saving" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition text-sm font-medium">
+                        <span x-show="!saving"><i class="fas fa-save mr-2"></i>Save Changes</span>
+                        <span x-show="saving"><i class="fas fa-spinner fa-spin mr-2"></i>Saving...</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Editor Content -->
+            <div class="flex-1 overflow-auto bg-gray-50 p-6">
+                <div x-show="!selectedTemplateId" class="h-full flex items-center justify-center text-gray-400">
+                    <div class="text-center">
+                        <i class="fas fa-hand-pointer text-6xl mb-4"></i>
+                        <p class="text-xl">Select a template from the left sidebar to start editing</p>
+                    </div>
+                </div>
+
+                <div x-show="selectedTemplateId" class="max-w-4xl mx-auto space-y-6">
+                    
+                    <!-- Variables Panel -->
+                    <div class="bg-white rounded-lg shadow-sm border p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-semibold text-gray-800 text-sm">Available Variables</h4>
+                            <span class="text-xs text-gray-500">Click to insert</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <template x-for="variable in getCurrentTemplate()?.variables || []" :key="variable">
+                                <button type="button" @click="insertVariable(variable)" 
+                                        class="px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-md hover:from-blue-600 hover:to-blue-700 text-sm font-medium shadow-sm transition">
+                                    <i class="fas fa-plus-circle mr-1"></i>{<span x-text="variable"></span>}
+                                </button>
+                            </template>
+                        </div>
+                        <div class="mt-3 text-xs text-gray-600 bg-gray-50 rounded p-2">
+                            <strong>💡 Tip:</strong> Variables will be automatically replaced with actual data when SMS is sent
+                        </div>
+                    </div>
+
+                    <!-- Message Editor -->
+                    <div class="bg-white rounded-lg shadow-sm border p-6">
+                        <label class="block text-sm font-semibold text-gray-800 mb-3">Message Template</label>
+                        <textarea x-model="editingTemplate.message" @input="validateEditMessage()" 
+                                  rows="8" 
+                                  class="w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm transition"
+                                  :class="editValidation.is_valid ? 'border-gray-200' : 'border-red-300'"
+                                  placeholder="Enter your SMS template here...&#10;&#10;Use variables like {student_name}, {batch_name}, {date}&#10;&#10;Example:&#10;Dear Parent, {student_name} was PRESENT today in {batch_name}."></textarea>
+                        
+                        <!-- Character Info Bar -->
+                        <div class="mt-3 flex justify-between items-center text-sm">
+                            <div class="flex items-center space-x-4">
+                                <div class="text-gray-600">
+                                    <i class="fas fa-keyboard mr-1"></i>
+                                    <span class="font-medium" x-text="editingTemplate.message?.length || 0"></span> actual chars
+                                </div>
+                                <div :class="editValidation.remaining >= 30 ? 'text-green-600' : editValidation.remaining >= 10 ? 'text-yellow-600' : 'text-red-600'">
+                                    <i class="fas fa-tachometer-alt mr-1"></i>
+                                    <span class="font-medium" x-text="editValidation.remaining"></span> remaining
+                                </div>
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                Bengali = 2 chars • English = 1 char
+                            </div>
+                        </div>
+
+                        <!-- Warning -->
+                        <div x-show="!editValidation.is_valid" class="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start">
+                            <i class="fas fa-exclamation-triangle text-red-500 mt-1 mr-3"></i>
+                            <div class="text-sm text-red-700">
+                                <strong>Exceeds limit!</strong> Your message is too long. Please reduce by <span x-text="Math.abs(editValidation.remaining)"></span> characters.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Preview -->
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold text-lg">📱 Live Preview</h4>
+                            <span class="text-xs bg-white bg-opacity-20 px-3 py-1 rounded-full">With sample data</span>
+                        </div>
+                        <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur-sm">
+                            <div class="text-sm leading-relaxed" x-text="previewTemplate()"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- SMS History Footer -->
+            <div class="bg-white border-t p-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h4 class="font-semibold text-gray-800 text-sm">Recent SMS Activity</h4>
+                    <button @click="loadSMSLogs()" class="text-xs text-blue-600 hover:text-blue-700">
+                        <i class="fas fa-sync-alt mr-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="flex space-x-4 overflow-x-auto">
+                    <template x-for="log in smsLogs.slice(0, 5)" :key="log.id">
+                        <div class="flex-shrink-0 bg-gray-50 rounded-lg p-3 w-64 border">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-xs font-medium text-gray-700" x-text="log.phoneNumber"></span>
+                                <span class="text-xs px-2 py-1 rounded-full" 
+                                      :class="log.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                                      x-text="log.status === 'success' ? 'Sent' : 'Failed'"></span>
+                            </div>
+                            <div class="text-xs text-gray-600 line-clamp-2" x-text="log.message"></div>
+                            <div class="text-xs text-gray-400 mt-1" x-text="formatDateTime(log.timestamp)"></div>
+                        </div>
+                    </template>
+                    <div x-show="smsLogs.length === 0" class="text-center text-gray-400 text-sm py-4 w-full">
+                        <i class="fas fa-inbox text-2xl mb-2"></i>
+                        <p>No SMS history yet</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+function smsManagement() {
+    return {
+        templates: [],
+        smsLogs: [],
+        smsCount: 0,
+        selectedTemplateId: null,
+        editingTemplate: {
+            id: '',
+            name: '',
+            message: '',
+            variables: []
+        },
+        editValidation: {
+            char_count: 0,
+            max_characters: 130,
+            remaining: 130,
+            is_valid: true
+        },
+        saving: false,
+
+        async loadData() {
+            await this.loadTemplates();
+            await this.loadBalance();
+            await this.loadSMSLogs();
+            // Auto-select first template
+            if (this.templates.length > 0) {
+                this.selectTemplate(this.templates[0].id);
+            }
+        },
+
+        async loadTemplates() {
+            try {
+                const response = await fetch('/api/sms/templates');
+                if (response.ok) {
+                    this.templates = await response.json();
+                }
+            } catch (error) {
+                console.error('Failed to load templates:', error);
+            }
+        },
+
+        async loadBalance() {
+            try {
+                const response = await fetch('/api/sms/balance');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.smsCount = data.balance || 0;
+                }
+            } catch (error) {
+                console.error('Failed to load balance:', error);
+                this.smsCount = 0;
+            }
+        },
+
+        async loadSMSLogs() {
+            try {
+                const response = await fetch('/api/sms/logs');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.smsLogs = Array.isArray(data) ? data : (data.logs || []);
+                }
+            } catch (error) {
+                console.error('Failed to load SMS logs:', error);
+                this.smsLogs = [];
+            }
+        },
+
+        selectTemplate(templateId) {
+            const template = this.templates.find(t => t.id === templateId);
+            if (template) {
+                this.selectedTemplateId = templateId;
+                this.editingTemplate = {
+                    id: template.id,
+                    name: template.name,
+                    message: template.message,
+                    variables: template.variables || [],
+                    category: template.category
+                };
+                this.validateEditMessage();
+            }
+        },
+
+        getCurrentTemplate() {
+            return this.templates.find(t => t.id === this.selectedTemplateId);
+        },
+
+        insertVariable(variable) {
+            const cursorPos = document.querySelector('textarea')?.selectionStart || this.editingTemplate.message.length;
+            const text = this.editingTemplate.message;
+            const before = text.substring(0, cursorPos);
+            const after = text.substring(cursorPos);
+            this.editingTemplate.message = before + `{${variable}}` + after;
+            this.validateEditMessage();
+        },
+
+        async validateEditMessage() {
+            if (!this.editingTemplate.message) {
+                this.editValidation = {
+                    char_count: 0,
+                    max_characters: 130,
+                    remaining: 130,
+                    is_valid: true
+                };
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/sms/validate-message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: this.editingTemplate.message })
+                });
+
+                if (response.ok) {
+                    this.editValidation = await response.json();
+                }
+            } catch (error) {
+                console.error('Failed to validate message:', error);
+            }
+        },
+
+        previewTemplate() {
+            let message = this.editingTemplate.message || '';
+            const today = new Date().toLocaleDateString('en-GB');
+            
+            message = message.replace(/{student_name}/g, 'Ahmed Hasan');
+            message = message.replace(/{batch_name}/g, 'Batch A');
+            message = message.replace(/{date}/g, today);
+            message = message.replace(/{subject}/g, 'Mathematics');
+            message = message.replace(/{marks}/g, '85');
+            message = message.replace(/{total}/g, '100');
+            
+            return message || 'Your preview will appear here...';
+        },
+
+        async saveTemplate() {
+            if (!this.editValidation.is_valid) {
+                showToast('Message exceeds character limit', 'error');
+                return;
+            }
+
+            this.saving = true;
+            try {
+                const response = await fetch(`/api/sms/templates/${this.editingTemplate.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: this.editingTemplate.message
+                    })
+                });
+
+                if (response.ok) {
+                    await this.loadTemplates();
+                    showToast('✅ Template saved successfully!', 'success');
+                } else {
+                    const error = await response.json();
+                    showToast('Failed to save: ' + (error.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save template:', error);
+                showToast('Failed to save template', 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        formatDateTime(timestamp) {
+            if (!timestamp) return 'N/A';
+            const date = new Date(timestamp);
+            return date.toLocaleString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+    };
+}
+</script>
+
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>

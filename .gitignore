@@ -1,0 +1,58 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+.pytest_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Flask session files
+flask_session/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment variables
+# .env is now committed to GitHub for VPS deployment
+# .env
+.env.local
+.env.*.local
+
+# Large files and archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+attached_assets/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+server.log
+/tmp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+backup/

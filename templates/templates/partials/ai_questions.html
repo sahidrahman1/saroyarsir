@@ -1,0 +1,546 @@
+<div x-data="aiQuestions()" x-init="loadData()" class="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    
+    <!-- Professional Top Bar -->
+    <div class="bg-white border-b shadow-sm">
+        <div class="px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-3 rounded-lg shadow-md">
+                    <i class="fas fa-brain text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Praggo AI Question Generator</h1>
+                    <p class="text-sm text-gray-500">Generate NCTB curriculum-based questions with answers & explanations</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-right">
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">Praggo AI Status</div>
+                    <div class="text-sm font-bold" :class="aiHealthy ? 'text-green-600' : 'text-red-600'">
+                        <i :class="aiHealthy ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle'"></i>
+                        <span x-text="aiHealthy ? `${activeKeys}/${totalKeys} Keys Active` : 'Offline'"></span>
+                    </div>
+                </div>
+                <button @click="showApiStatus = !showApiStatus" 
+                        class="text-purple-600 hover:text-purple-700 transition">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex min-h-0">
+        
+        <!-- Left Sidebar - Configuration -->
+        <div class="w-80 bg-white border-r overflow-y-auto flex-shrink-0">
+            <div class="p-4">
+                <div class="mb-6">
+                    <h3 class="font-bold text-gray-800 uppercase text-xs tracking-wide mb-3">Question Settings</h3>
+                    
+                    <!-- Class Selection -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Class</label>
+                        <select x-model="selectedClass" @change="loadSubjects()" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                            <option value="">Select Class</option>
+                            <template x-for="cls in classes" :key="cls">
+                                <option :value="cls" x-text="cls"></option>
+                            </template>
+                        </select>
+                    </div>
+                    
+                    <!-- Subject Selection -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                        <select x-model="selectedSubject" @change="loadChapters()" 
+                                :disabled="!selectedClass"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 disabled:bg-gray-100">
+                            <option value="">Select Subject</option>
+                            <template x-for="subject in subjects" :key="subject">
+                                <option :value="subject" x-text="subject"></option>
+                            </template>
+                        </select>
+                    </div>
+                    
+                    <!-- Chapter Selection -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Chapter</label>
+                        <select x-model="selectedChapter" 
+                                :disabled="!selectedSubject"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 disabled:bg-gray-100">
+                            <option value="">All Chapters</option>
+                            <template x-for="chapter in chapters" :key="chapter">
+                                <option :value="chapter" x-text="chapter"></option>
+                            </template>
+                        </select>
+                    </div>
+                    
+                    <!-- Question Type -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Question Type</label>
+                        <select x-model="questionType" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                            <option value="mcq">MCQ (Multiple Choice)</option>
+                            <option value="cq">CQ (Creative Question)</option>
+                            <option value="creative">Creative Question (Full)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Difficulty -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+                        <select x-model="difficulty" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                            <option value="mixed">Mixed</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Quantity -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Number of Questions (Max: 40)</label>
+                        <input x-model="quantity" type="number" min="1" max="40" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                               placeholder="Enter 1-40 questions">
+                    </div>
+                    
+                    <!-- Generate Button -->
+                    <button @click="generateQuestions()" 
+                            :disabled="!selectedClass || !selectedSubject || generating" 
+                            class="w-full px-4 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition font-medium">
+                        <span x-show="!generating">
+                            <i class="fas fa-magic mr-2"></i>Generate with Praggo AI
+                        </span>
+                        <span x-show="generating">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Generating...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col min-h-0">
+            
+            <!-- Content Header -->
+            <div class="bg-white border-b px-6 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <h3 class="font-bold text-gray-800">Generated Questions</h3>
+                    <span x-show="generatedQuestions.length > 0" 
+                          class="text-xs bg-purple-100 text-purple-600 px-3 py-1 rounded-full" 
+                          x-text="`${generatedQuestions.length} questions`"></span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button @click="copyAllQuestions()" 
+                            x-show="generatedQuestions.length > 0"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+                        <i class="fas fa-copy mr-2"></i>Copy All
+                    </button>
+                    <button @click="downloadQuestions()" 
+                            x-show="generatedQuestions.length > 0"
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium">
+                        <i class="fas fa-download mr-2"></i>Download
+                    </button>
+                </div>
+            </div>
+
+            <!-- Questions Display -->
+            <div class="flex-1 overflow-auto bg-gray-50 p-6">
+                
+                <!-- Empty State -->
+                <div x-show="generatedQuestions.length === 0 && !generating" 
+                     class="h-full flex items-center justify-center text-gray-400">
+                    <div class="text-center">
+                        <i class="fas fa-question-circle text-6xl mb-4"></i>
+                        <p class="text-xl mb-2">No questions generated yet</p>
+                        <p class="text-sm">Select class, subject and click "Generate Questions" to start</p>
+                    </div>
+                </div>
+                
+                <!-- Loading State -->
+                <div x-show="generating" class="h-full flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                        <p class="text-lg font-medium text-gray-700">AI is generating questions...</p>
+                        <p class="text-sm text-gray-500">This may take a few moments</p>
+                    </div>
+                </div>
+
+                <!-- Questions List -->
+                <div x-show="generatedQuestions.length > 0" class="space-y-6">
+                    <template x-for="(question, index) in generatedQuestions" :key="index">
+                        <div class="bg-white rounded-lg shadow-sm border p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <span class="bg-purple-100 text-purple-600 text-sm font-bold px-3 py-1 rounded-full" 
+                                          x-text="`প্রশ্ন ${index + 1}`"></span>
+                                    <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded" 
+                                          x-text="question.question_type"></span>
+                                </div>
+                                <button @click="copyQuestion(question)" 
+                                        class="text-gray-400 hover:text-gray-600 text-sm">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Question Text -->
+                            <div class="mb-4">
+                                <p class="text-lg font-medium text-gray-800 mb-3" x-text="question.question_text"></p>
+                                
+                                <!-- Options for MCQ -->
+                                <div x-show="question.options && question.options.length > 0" class="space-y-2">
+                                    <template x-for="(option, optIndex) in question.options" :key="optIndex">
+                                        <div class="flex items-center space-x-3">
+                                            <span class="text-sm font-medium text-gray-600" 
+                                                  x-text="['ক)', 'খ)', 'গ)', 'ঘ)'][optIndex]"></span>
+                                            <span class="text-sm text-gray-700" x-text="option"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <!-- Answer and Explanation -->
+                            <div class="border-t pt-4">
+                                <div x-show="question.correct_answer" class="mb-3">
+                                    <span class="text-sm font-medium text-green-600">সঠিক উত্তর: </span>
+                                    <span class="text-sm text-gray-700" x-text="question.correct_answer"></span>
+                                </div>
+                                <div x-show="question.explanation" class="mb-3">
+                                    <span class="text-sm font-medium text-blue-600">ব্যাখ্যা: </span>
+                                    <span class="text-sm text-gray-700" x-text="question.explanation"></span>
+                                </div>
+                                <div x-show="question.solution">
+                                    <span class="text-sm font-medium text-purple-600">সমাধান: </span>
+                                    <span class="text-sm text-gray-700" x-text="question.solution"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- API Status Modal -->
+    <div x-show="showApiStatus" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         @click.self="showApiStatus = false">
+        
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">Praggo AI API Status</h3>
+                <button @click="showApiStatus = false" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <template x-for="key in apiKeyStatus" :key="key.key_index">
+                    <div class="flex items-center justify-between p-3 border rounded-lg">
+                        <div class="flex-1">
+                            <div class="text-sm font-medium text-gray-800">
+                                API Key <span x-text="key.key_index"></span>
+                            </div>
+                            <div class="text-xs text-gray-500" x-text="key.masked_key"></div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm" :class="key.status === 'active' ? 'text-green-600' : 'text-red-600'">
+                                <i :class="key.status === 'active' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle'"></i>
+                                <span x-text="key.status === 'active' ? 'Active' : 'Limited'"></span>
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                <span x-text="key.usage"></span>/<span x-text="key.max_usage"></span> requests
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            
+            <div class="mt-4 p-3 bg-purple-50 rounded-lg">
+                <div class="text-sm text-purple-800">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Total: <span x-text="totalKeys"></span> keys, 
+                    Active: <span x-text="activeKeys"></span> keys
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function aiQuestions() {
+    return {
+        // Data
+        classes: [],
+        subjects: [],
+        chapters: [],
+        generatedQuestions: [],
+        
+        // Form data
+        selectedClass: '',
+        selectedSubject: '',
+        selectedChapter: '',
+        questionType: 'mcq',
+        difficulty: 'medium',
+        quantity: 10,
+        
+        // State
+        generating: false,
+        aiHealthy: false,
+        showApiStatus: false,
+        totalKeys: 0,
+        activeKeys: 0,
+        apiKeyStatus: [],
+
+        async loadData() {
+            await this.checkAIHealth();
+            await this.loadClasses();
+        },
+
+        async checkAIHealth() {
+            try {
+                const response = await fetch('/api/ai/api-status');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.aiHealthy = data.success && data.active_keys > 0;
+                    this.totalKeys = data.total_keys || 0;
+                    this.activeKeys = data.active_keys || 0;
+                    this.apiKeyStatus = data.api_keys || [];
+                } else {
+                    this.aiHealthy = false;
+                    this.totalKeys = 0;
+                    this.activeKeys = 0;
+                }
+            } catch (error) {
+                console.error('Failed to check AI status:', error);
+                this.aiHealthy = false;
+                this.totalKeys = 0;
+                this.activeKeys = 0;
+            }
+        },
+
+        async loadClasses() {
+            try {
+                const response = await fetch('/api/ai/curriculum/classes');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.classes = data.data.classes;
+                }
+            } catch (error) {
+                console.error('Failed to load classes:', error);
+                showToast('Failed to load classes', 'error');
+            }
+        },
+
+        async loadSubjects() {
+            if (!this.selectedClass) return;
+            
+            try {
+                const response = await fetch(`/api/ai/curriculum/subjects/${encodeURIComponent(this.selectedClass)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.subjects = data.data.subjects;
+                    this.selectedSubject = '';
+                    this.chapters = [];
+                    this.selectedChapter = '';
+                }
+            } catch (error) {
+                console.error('Failed to load subjects:', error);
+                showToast('Failed to load subjects', 'error');
+            }
+        },
+
+        async loadChapters() {
+            if (!this.selectedClass || !this.selectedSubject) return;
+            
+            try {
+                const response = await fetch(`/api/ai/curriculum/chapters/${encodeURIComponent(this.selectedClass)}/${encodeURIComponent(this.selectedSubject)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.chapters = data.data.chapters;
+                    this.selectedChapter = '';
+                }
+            } catch (error) {
+                console.error('Failed to load chapters:', error);
+                showToast('Failed to load chapters', 'error');
+            }
+        },
+
+        async generateQuestions() {
+            if (!this.selectedClass || !this.selectedSubject) {
+                showToast('Please select class and subject', 'error');
+                return;
+            }
+
+            this.generating = true;
+            
+            try {
+                const requestData = {
+                    class_id: this.selectedClass.toLowerCase().replace(' ', '_'),
+                    class_name: this.selectedClass,
+                    subject_id: this.selectedSubject.toLowerCase().replace(' ', '_'),
+                    subject_name: this.selectedSubject,
+                    chapter_title: this.selectedChapter || null,
+                    question_type: this.questionType,
+                    difficulty: this.difficulty,
+                    quantity: parseInt(this.quantity)
+                };
+
+                const response = await fetch('/api/ai/generate-questions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    this.generatedQuestions = data.data.questions;
+                    showToast(`✅ Generated ${data.data.count} questions successfully!`, 'success');
+                } else {
+                    const error = await response.json();
+                    showToast('Failed to generate questions: ' + (error.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Failed to generate questions:', error);
+                showToast('Failed to generate questions', 'error');
+            } finally {
+                this.generating = false;
+            }
+        },
+
+        copyQuestion(question) {
+            let text = `প্রশ্ন: ${question.question_text}\n\n`;
+            
+            if (question.options && question.options.length > 0) {
+                const optionLabels = ['ক)', 'খ)', 'গ)', 'ঘ)'];
+                question.options.forEach((option, index) => {
+                    text += `${optionLabels[index]} ${option}\n`;
+                });
+                text += '\n';
+            }
+            
+            if (question.correct_answer) {
+                text += `সঠিক উত্তর: ${question.correct_answer}\n`;
+            }
+            
+            if (question.explanation) {
+                text += `ব্যাখ্যা: ${question.explanation}\n`;
+            }
+            
+            if (question.solution) {
+                text += `সমাধান: ${question.solution}\n`;
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Question copied to clipboard!', 'success');
+            });
+        },
+
+        copyAllQuestions() {
+            let allText = `${this.selectedClass} - ${this.selectedSubject}\n`;
+            if (this.selectedChapter) {
+                allText += `অধ্যায়: ${this.selectedChapter}\n`;
+            }
+            allText += `\n${'='.repeat(50)}\n\n`;
+
+            this.generatedQuestions.forEach((question, index) => {
+                allText += `প্রশ্ন ${index + 1}: ${question.question_text}\n\n`;
+                
+                if (question.options && question.options.length > 0) {
+                    const optionLabels = ['ক)', 'খ)', 'গ)', 'ঘ)'];
+                    question.options.forEach((option, optIndex) => {
+                        allText += `${optionLabels[optIndex]} ${option}\n`;
+                    });
+                    allText += '\n';
+                }
+                
+                if (question.correct_answer) {
+                    allText += `সঠিক উত্তর: ${question.correct_answer}\n`;
+                }
+                
+                if (question.explanation) {
+                    allText += `ব্যাখ্যা: ${question.explanation}\n`;
+                }
+                
+                if (question.solution) {
+                    allText += `সমাধান: ${question.solution}\n`;
+                }
+                
+                allText += '\n' + '-'.repeat(30) + '\n\n';
+            });
+
+            navigator.clipboard.writeText(allText).then(() => {
+                showToast('All questions copied to clipboard!', 'success');
+            });
+        },
+
+        downloadQuestions() {
+            let content = `${this.selectedClass} - ${this.selectedSubject}\n`;
+            if (this.selectedChapter) {
+                content += `অধ্যায়: ${this.selectedChapter}\n`;
+            }
+            content += `প্রশ্নের ধরন: ${this.questionType.toUpperCase()}\n`;
+            content += `কঠিনতা: ${this.difficulty}\n`;
+            content += `তারিখ: ${new Date().toLocaleDateString('bn-BD')}\n`;
+            content += `\n${'='.repeat(50)}\n\n`;
+
+            this.generatedQuestions.forEach((question, index) => {
+                content += `প্রশ্ন ${index + 1}: ${question.question_text}\n\n`;
+                
+                if (question.options && question.options.length > 0) {
+                    const optionLabels = ['ক)', 'খ)', 'গ)', 'ঘ)'];
+                    question.options.forEach((option, optIndex) => {
+                        content += `${optionLabels[optIndex]} ${option}\n`;
+                    });
+                    content += '\n';
+                }
+                
+                if (question.correct_answer) {
+                    content += `সঠিক উত্তর: ${question.correct_answer}\n`;
+                }
+                
+                if (question.explanation) {
+                    content += `ব্যাখ্যা: ${question.explanation}\n`;
+                }
+                
+                if (question.solution) {
+                    content += `সমাধান: ${question.solution}\n`;
+                }
+                
+                content += '\n' + '-'.repeat(30) + '\n\n';
+            });
+
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${this.selectedClass}_${this.selectedSubject}_Questions.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            showToast('Questions downloaded successfully!', 'success');
+        }
+    };
+}
+</script>
+
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>

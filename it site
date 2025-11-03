@@ -1,0 +1,24 @@
+[0;1;32m●[0m saro.service - Saro Student Management System
+     Loaded: loaded (]8;;file://vmi2823196/etc/systemd/system/saro.service/etc/systemd/system/saro.service]8;;; [0;1;32menabled[0m; preset: [0;1;32menabled[0m)
+     Active: [0;1;32mactive (running)[0m since Fri 2025-10-24 13:52:40 CEST; 6s ago
+   Main PID: 414912 (gunicorn)
+      Tasks: 5 (limit: 9483)
+     Memory: 106.6M (peak: 106.8M)
+        CPU: 2.483s
+     CGroup: /system.slice/saro.service
+             ├─[0;38;5;245m414912 /var/www/saroyarsir/venv/bin/python3 /var/www/saroyarsir/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:8001 --timeout 120 --access-logfile - --error-logfile - wsgi:app[0m
+             ├─[0;38;5;245m414916 /var/www/saroyarsir/venv/bin/python3 /var/www/saroyarsir/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:8001 --timeout 120 --access-logfile - --error-logfile - wsgi:app[0m
+             ├─[0;38;5;245m414917 /var/www/saroyarsir/venv/bin/python3 /var/www/saroyarsir/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:8001 --timeout 120 --access-logfile - --error-logfile - wsgi:app[0m
+             ├─[0;38;5;245m414918 /var/www/saroyarsir/venv/bin/python3 /var/www/saroyarsir/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:8001 --timeout 120 --access-logfile - --error-logfile - wsgi:app[0m
+             └─[0;38;5;245m414919 /var/www/saroyarsir/venv/bin/python3 /var/www/saroyarsir/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:8001 --timeout 120 --access-logfile - --error-logfile - wsgi:app[0m
+
+Oct 24 13:52:44 vmi2823196 gunicorn[414918]:     return dialect.connect(*cargs, **cparams)
+Oct 24 13:52:44 vmi2823196 gunicorn[414918]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Oct 24 13:52:44 vmi2823196 gunicorn[414918]:   File "/var/www/saroyarsir/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 629, in connect
+Oct 24 13:52:44 vmi2823196 gunicorn[414918]:     return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+Oct 24 13:52:44 vmi2823196 gunicorn[414918]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Oct 24 13:52:44 vmi2823196 gunicorn[414918]: sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) unable to open database file
+Oct 24 13:52:44 vmi2823196 gunicorn[414918]: (Background on this error at: https://sqlalche.me/e/20/e3q8)
+Oct 24 13:52:44 vmi2823196 gunicorn[414918]: Error creating database tables: (sqlite3.OperationalError) unable to open database file
+Oct 24 13:52:44 vmi2823196 gunicorn[414918]: (Background on this error at: https://sqlalche.me/e/20/e3q8)
+Oct 24 13:52:44 vmi2823196 gunicorn[414918]: 127.0.0.1 - - [24/Oct/2025:13:52:44 +0200] "GET /api/dashboard/stats HTTP/1.1" 500 34 "https://gsteaching.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0"

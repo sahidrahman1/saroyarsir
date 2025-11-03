@@ -1,0 +1,125 @@
+╔═══════════════════════════════════════════════════════════╗
+║                  VPS FIX - QUICK REFERENCE                ║
+╚═══════════════════════════════════════════════════════════╝
+
+📋 ISSUES FIXED:
+  1. ❌ Fee Section Error: "no such column: fees.exam"
+  2. ❌ Marks Update: Not saving in Monthly Exams
+
+╔═══════════════════════════════════════════════════════════╗
+║               DEPLOYMENT (CHOOSE ONE METHOD)              ║
+╚═══════════════════════════════════════════════════════════╝
+
+┌───────────────────────────────────────────────────────────┐
+│ METHOD 1: AUTOMATED (RECOMMENDED) ⚡                       │
+└───────────────────────────────────────────────────────────┘
+
+On your VPS:
+
+  ssh user@your-vps-ip
+  cd /path/to/your/app
+  ./deploy_fix_to_vps.sh
+
+That's it! The script handles everything automatically.
+
+┌───────────────────────────────────────────────────────────┐
+│ METHOD 2: MANUAL STEP-BY-STEP 🔧                          │
+└───────────────────────────────────────────────────────────┘
+
+  1. Pull latest code:
+     git pull origin main
+
+  2. Backup database:
+     cp instance/app.db instance/app.db.backup
+
+  3. Run fix:
+     python3 fix_vps_issues.py
+
+  4. Restart app:
+     sudo systemctl restart your-service
+     # OR
+     pkill -f gunicorn && ./start_app.sh
+
+╔═══════════════════════════════════════════════════════════╗
+║                         TESTING                           ║
+╚═══════════════════════════════════════════════════════════╝
+
+✓ Test 1: Fee Section
+  1. Login as teacher/admin
+  2. Go to Fees → Select batch → Select year 2025
+  3. Should see students WITHOUT error
+
+✓ Test 2: Marks Update
+  1. Go to Monthly Exams → Open exam
+  2. Enter marks for students
+  3. Click Save → Refresh page
+  4. Marks should persist
+
+✓ Test 3: Rankings
+  1. After entering all marks
+  2. Click "Generate Rankings"
+  3. Should see rankings with roll numbers
+
+╔═══════════════════════════════════════════════════════════╗
+║                    TROUBLESHOOTING                        ║
+╚═══════════════════════════════════════════════════════════╝
+
+🔍 Check Database Schema:
+  sqlite3 instance/app.db "PRAGMA table_info(fees);"
+  
+  Should show:
+    ✓ exam_fee column
+    ✓ others_fee column
+    ✗ NO 'exam' column (without _fee)
+
+🔍 Check Application Logs:
+  tail -f logs/app.log
+  # OR
+  sudo journalctl -u your-service-name -f
+
+🔍 Check Database Permissions:
+  ls -la instance/app.db
+  # Should be writable by app user
+
+🔄 Restart Application:
+  sudo systemctl restart your-service
+  # OR
+  pkill -f gunicorn
+  # Then start manually
+
+🆘 Emergency Rollback:
+  sudo systemctl stop your-service
+  cp instance/app.db.backup instance/app.db
+  sudo systemctl start your-service
+
+╔═══════════════════════════════════════════════════════════╗
+║                     FILES CREATED                         ║
+╚═══════════════════════════════════════════════════════════╝
+
+  📄 fix_vps_issues.py          - Database diagnostic/fix script
+  📄 deploy_fix_to_vps.sh       - Full automated deployment
+  📄 quick_fix_vps.sh           - Quick database-only fix
+  📄 VPS_FIX_GUIDE.md          - Complete documentation
+
+╔═══════════════════════════════════════════════════════════╗
+║                   SUCCESS INDICATORS                      ║
+╚═══════════════════════════════════════════════════════════╝
+
+  ✅ Fee section loads without errors
+  ✅ Students display when batch selected
+  ✅ Marks save successfully
+  ✅ Marks persist after refresh
+  ✅ Rankings generate correctly
+  ✅ No SQL errors in logs
+
+╔═══════════════════════════════════════════════════════════╗
+║                    NEED MORE HELP?                        ║
+╚═══════════════════════════════════════════════════════════╝
+
+  📖 Read full guide: VPS_FIX_GUIDE.md
+  📊 Check database: sqlite3 instance/app.db
+  📝 View logs: tail -f logs/app.log
+
+═══════════════════════════════════════════════════════════
+
+Good luck! 🚀

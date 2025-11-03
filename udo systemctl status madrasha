@@ -1,0 +1,24 @@
+[0;1;32m●[0m saro.service - Saro Student Management System
+     Loaded: loaded (]8;;file://vmi2823196/etc/systemd/system/saro.service/etc/systemd/system/saro.service]8;;; [0;1;32menabled[0m; preset: [0;1;32menabled[0m)
+     Active: [0;1;32mactive (running)[0m since Fri 2025-10-24 20:45:53 CEST; 3min 25s ago
+   Main PID: 436052 (gunicorn)
+      Tasks: 5 (limit: 9483)
+     Memory: 166.4M (peak: 167.1M)
+        CPU: 17.327s
+     CGroup: /system.slice/saro.service
+             ├─[0;38;5;245m436052 /var/www/saroyarsir/venv/bin/python3 /var/www/saroyarsir/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:8001 --timeout 120 --access-logfile - --error-logfile - wsgi:app[0m
+             ├─[0;38;5;245m436054 /var/www/saroyarsir/venv/bin/python3 /var/www/saroyarsir/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:8001 --timeout 120 --access-logfile - --error-logfile - wsgi:app[0m
+             ├─[0;38;5;245m436055 /var/www/saroyarsir/venv/bin/python3 /var/www/saroyarsir/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:8001 --timeout 120 --access-logfile - --error-logfile - wsgi:app[0m
+             ├─[0;38;5;245m436056 /var/www/saroyarsir/venv/bin/python3 /var/www/saroyarsir/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:8001 --timeout 120 --access-logfile - --error-logfile - wsgi:app[0m
+             └─[0;38;5;245m436057 /var/www/saroyarsir/venv/bin/python3 /var/www/saroyarsir/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:8001 --timeout 120 --access-logfile - --error-logfile - wsgi:app[0m
+
+Oct 24 20:48:56 vmi2823196 gunicorn[436054]: 127.0.0.1 - - [24/Oct/2025:20:48:56 +0200] "GET /api/dashboard/stats HTTP/1.1" 200 1540 "https://gsteaching.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0"
+Oct 24 20:48:58 vmi2823196 gunicorn[436055]: 127.0.0.1 - - [24/Oct/2025:20:48:58 +0200] "GET /api/dashboard/stats HTTP/1.1" 200 1540 "https://gsteaching.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0"
+Oct 24 20:49:01 vmi2823196 gunicorn[436054]: 127.0.0.1 - - [24/Oct/2025:20:49:01 +0200] "GET /api/dashboard/stats HTTP/1.1" 200 1540 "https://gsteaching.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0"
+Oct 24 20:49:03 vmi2823196 gunicorn[436057]: 127.0.0.1 - - [24/Oct/2025:20:49:03 +0200] "GET /api/dashboard/stats HTTP/1.1" 200 1540 "https://gsteaching.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0"
+Oct 24 20:49:06 vmi2823196 gunicorn[436056]: 127.0.0.1 - - [24/Oct/2025:20:49:06 +0200] "GET /api/dashboard/stats HTTP/1.1" 200 1540 "https://gsteaching.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0"
+Oct 24 20:49:09 vmi2823196 gunicorn[436054]: 127.0.0.1 - - [24/Oct/2025:20:49:09 +0200] "GET /api/dashboard/stats HTTP/1.1" 200 1540 "https://gsteaching.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0"
+Oct 24 20:49:11 vmi2823196 gunicorn[436055]: 127.0.0.1 - - [24/Oct/2025:20:49:11 +0200] "GET /api/dashboard/stats HTTP/1.1" 200 1540 "https://gsteaching.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0"
+Oct 24 20:49:13 vmi2823196 gunicorn[436057]: 127.0.0.1 - - [24/Oct/2025:20:49:13 +0200] "GET /api/dashboard/stats HTTP/1.1" 200 1540 "https://gsteaching.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0"
+Oct 24 20:49:16 vmi2823196 gunicorn[436054]: 127.0.0.1 - - [24/Oct/2025:20:49:16 +0200] "GET /api/dashboard/stats HTTP/1.1" 200 1540 "https://gsteaching.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0"
+Oct 24 20:49:19 vmi2823196 gunicorn[436054]: 127.0.0.1 - - [24/Oct/2025:20:49:19 +0200] "GET /api/dashboard/stats HTTP/1.1" 200 1540 "https://gsteaching.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0"

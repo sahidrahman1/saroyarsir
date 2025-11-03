@@ -1,0 +1,399 @@
+<!-- Fee Management Component - Completely Rewritten -->
+<div class="space-y-6" x-data="feeManagerNew()" x-init="init()">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Fee Management</h2>
+            <p class="text-gray-600">Manage monthly fees for students</p>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="bg-white rounded-lg shadow p-6">
+        
+        <!-- Error/Success Messages -->
+        <div x-show="error" x-cloak class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+                <p class="text-red-800 font-medium" x-text="error"></p>
+            </div>
+        </div>
+
+        <div x-show="message" x-cloak class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <p class="text-green-800 font-medium" x-text="message"></p>
+            </div>
+        </div>
+
+        <!-- Selection Area -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-blue-50 rounded-lg">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Select Batch</label>
+                <select x-model="selectedBatch" @change="loadFees()"
+                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                    <option value="">-- Choose Batch --</option>
+                    <template x-for="batch in batches" :key="batch.id">
+                        <option :value="batch.id" x-text="`${batch.name} (${batch.student_count || 0} students)`"></option>
+                    </template>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
+                <select x-model="selectedYear" @change="loadFees()"
+                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div x-show="loading" x-cloak class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+            <p class="mt-4 text-gray-600">Loading fees...</p>
+        </div>
+
+        <!-- Fee Table -->
+        <div x-show="!loading && students.length > 0" x-cloak>
+            <div class="mb-4 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    Fee Details (<span x-text="students.length"></span> students)
+                </h3>
+                <button @click="saveAllFees()" 
+                        :disabled="saving || !hasChanges()"
+                        :class="hasChanges() ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'"
+                        class="px-6 py-2 text-white rounded-lg font-medium transition-colors">
+                    <span x-show="!saving">Save All Changes</span>
+                    <span x-show="saving">Saving...</span>
+                </button>
+            </div>
+
+            <div class="overflow-x-auto border border-gray-200 rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
+                                Student
+                            </th>
+                            <template x-for="month in 12" :key="month">
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap"
+                                    x-text="getMonthName(month)"></th>
+                            </template>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider bg-blue-100">
+                                Total
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <template x-for="(student, index) in students" :key="student.student_id">
+                            <tr :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50'">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 z-10"
+                                    :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50'">
+                                    <div>
+                                        <div x-text="student.student_name"></div>
+                                        <div class="text-xs text-gray-500" x-text="student.phone"></div>
+                                    </div>
+                                </td>
+                                <template x-for="month in 12" :key="month">
+                                    <td class="px-2 py-3 text-center">
+                                        <input type="number" 
+                                               :value="getFeeAmount(student.student_id, month)"
+                                               @input="updateFeeAmount(student.student_id, month, $event.target.value)"
+                                               @change="markChanged(student.student_id, month)"
+                                               class="w-20 px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                               min="0"
+                                               step="0.01">
+                                    </td>
+                                </template>
+                                <td class="px-4 py-3 text-center font-bold text-blue-600 bg-blue-50"
+                                    x-text="getStudentTotal(student.student_id).toFixed(2)"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                    <tfoot class="bg-gray-100">
+                        <tr>
+                            <td class="px-4 py-3 text-right font-bold text-gray-900 sticky left-0 bg-gray-100 z-10">
+                                Monthly Totals:
+                            </td>
+                            <template x-for="month in 12" :key="month">
+                                <td class="px-4 py-3 text-center font-bold text-gray-900"
+                                    x-text="getMonthTotal(month).toFixed(2)"></td>
+                            </template>
+                            <td class="px-4 py-3 text-center font-bold text-blue-600 text-lg bg-blue-100"
+                                x-text="getGrandTotal().toFixed(2)"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- No Data State -->
+        <div x-show="!loading && students.length === 0 && selectedBatch" x-cloak class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+            </svg>
+            <p class="mt-4 text-gray-600">No students found in this batch</p>
+        </div>
+
+        <!-- Initial State -->
+        <div x-show="!loading && !selectedBatch" x-cloak class="text-center py-12">
+            <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <p class="mt-4 text-lg text-gray-600">Select a batch to manage fees</p>
+        </div>
+    </div>
+</div>
+
+<script>
+function feeManagerNew() {
+    return {
+        // State
+        batches: [],
+        students: [],
+        fees: {}, // Format: { student_id: { month: { amount, fee_id, status } } }
+        changedFees: new Set(), // Track changed entries as "studentId_month"
+        
+        selectedBatch: '',
+        selectedYear: new Date().getFullYear(),
+        
+        loading: false,
+        saving: false,
+        error: '',
+        message: '',
+        
+        // Initialize
+        async init() {
+            console.log('Fee Manager initialized');
+            this.error = '';
+            this.message = '';
+            await this.loadBatches();
+        },
+        
+        // Load available batches
+        async loadBatches() {
+            try {
+                const response = await fetch('/api/batches', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    this.batches = data.data || data.batches || [];
+                    console.log('Loaded batches:', this.batches.length);
+                } else {
+                    this.error = 'Failed to load batches';
+                }
+            } catch (err) {
+                console.error('Error loading batches:', err);
+                this.error = 'Error loading batches: ' + err.message;
+            }
+        },
+        
+        // Load fees for selected batch and year
+        async loadFees() {
+            if (!this.selectedBatch || !this.selectedYear) {
+                return;
+            }
+            
+            this.loading = true;
+            this.error = '';
+            this.message = '';
+            this.changedFees.clear();
+            
+            try {
+                const url = `/api/fees/load-monthly?batch_id=${this.selectedBatch}&year=${this.selectedYear}`;
+                console.log('Loading fees from:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Loaded fees:', data);
+                    
+                    if (data.success && data.data && data.data.fees) {
+                        this.students = data.data.fees;
+                        
+                        // Build fees lookup object
+                        this.fees = {};
+                        this.students.forEach(student => {
+                            this.fees[student.student_id] = student.months;
+                        });
+                        
+                        this.message = `Loaded fees for ${this.students.length} students`;
+                        setTimeout(() => this.message = '', 3000);
+                    } else {
+                        this.error = data.error || 'Failed to load fees';
+                        this.students = [];
+                    }
+                } else {
+                    const errorData = await response.json();
+                    this.error = errorData.error || `HTTP ${response.status}: Failed to load fees`;
+                    this.students = [];
+                }
+            } catch (err) {
+                console.error('Error loading fees:', err);
+                this.error = 'Error loading fees: ' + err.message;
+                this.students = [];
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        // Get fee amount for a student and month
+        getFeeAmount(studentId, month) {
+            const monthKey = String(month);
+            if (this.fees[studentId] && this.fees[studentId][monthKey]) {
+                return this.fees[studentId][monthKey].amount || 0;
+            }
+            return 0;
+        },
+        
+        // Update fee amount when input changes
+        updateFeeAmount(studentId, month, value) {
+            const monthKey = String(month);
+            const amount = parseFloat(value) || 0;
+            
+            if (!this.fees[studentId]) {
+                this.fees[studentId] = {};
+            }
+            
+            if (!this.fees[studentId][monthKey]) {
+                this.fees[studentId][monthKey] = {
+                    amount: 0,
+                    fee_id: null,
+                    status: null,
+                    paid_date: null
+                };
+            }
+            
+            this.fees[studentId][monthKey].amount = amount;
+        },
+        
+        // Mark a fee as changed
+        markChanged(studentId, month) {
+            const key = `${studentId}_${month}`;
+            this.changedFees.add(key);
+        },
+        
+        // Check if there are any changes
+        hasChanges() {
+            return this.changedFees.size > 0;
+        },
+        
+        // Get total for a student across all months
+        getStudentTotal(studentId) {
+            let total = 0;
+            for (let month = 1; month <= 12; month++) {
+                total += this.getFeeAmount(studentId, month);
+            }
+            return total;
+        },
+        
+        // Get total for a month across all students
+        getMonthTotal(month) {
+            let total = 0;
+            this.students.forEach(student => {
+                total += this.getFeeAmount(student.student_id, month);
+            });
+            return total;
+        },
+        
+        // Get grand total of all fees
+        getGrandTotal() {
+            let total = 0;
+            this.students.forEach(student => {
+                total += this.getStudentTotal(student.student_id);
+            });
+            return total;
+        },
+        
+        // Get month name from number
+        getMonthName(month) {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return months[month - 1];
+        },
+        
+        // Save all changed fees
+        async saveAllFees() {
+            if (this.changedFees.size === 0) {
+                this.message = 'No changes to save';
+                return;
+            }
+            
+            this.saving = true;
+            this.error = '';
+            this.message = '';
+            
+            const changes = Array.from(this.changedFees);
+            let successCount = 0;
+            let errorCount = 0;
+            
+            console.log(`Saving ${changes.length} changed fees...`);
+            
+            for (const key of changes) {
+                const [studentId, month] = key.split('_').map(Number);
+                const monthKey = String(month);
+                const feeData = this.fees[studentId][monthKey];
+                
+                try {
+                    const response = await fetch('/api/fees/save-monthly', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            student_id: studentId,
+                            batch_id: parseInt(this.selectedBatch),
+                            month: month,
+                            year: parseInt(this.selectedYear),
+                            amount: feeData.amount
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log(`Saved fee for student ${studentId}, month ${month}:`, data);
+                        
+                        // Update fee_id if this was a new fee
+                        if (data.data && data.data.fee_id) {
+                            this.fees[studentId][monthKey].fee_id = data.data.fee_id;
+                        }
+                        
+                        successCount++;
+                    } else {
+                        const errorData = await response.json();
+                        console.error(`Failed to save fee for student ${studentId}, month ${month}:`, errorData);
+                        errorCount++;
+                    }
+                } catch (err) {
+                    console.error(`Error saving fee for student ${studentId}, month ${month}:`, err);
+                    errorCount++;
+                }
+            }
+            
+            this.saving = false;
+            this.changedFees.clear();
+            
+            if (errorCount === 0) {
+                this.message = `Successfully saved ${successCount} fee(s)`;
+                setTimeout(() => this.message = '', 3000);
+            } else {
+                this.error = `Saved ${successCount} fee(s), ${errorCount} failed`;
+            }
+        }
+    };
+}
+</script>

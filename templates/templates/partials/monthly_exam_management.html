@@ -1,0 +1,702 @@
+<!-- Monthly Exam Management Component -->
+<div x-show="activeSection === 'monthly-exams'" class="space-y-6">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Monthly Exam Management</h2>
+            <p class="text-gray-600">Create and manage monthly exam periods and individual exams</p>
+        </div>
+        <button 
+            x-on:click="openCreateMonthlyExamModal = true" 
+            class="btn-primary inline-flex items-center"
+        >
+            <i class="fas fa-plus mr-2"></i>
+            Create Monthly Exam Period
+        </button>
+    </div>
+
+    <!-- Tabs for Monthly Exam Management -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+                <button 
+                    x-on:click="monthlyExamTab = 'overview'"
+                    x-bind:class="monthlyExamTab === 'overview' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                >
+                    <i class="fas fa-calendar-alt mr-2"></i>
+                    Monthly Periods
+                </button>
+                <button 
+                    x-on:click="monthlyExamTab = 'management'"
+                    x-bind:class="monthlyExamTab === 'management' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                >
+                    <i class="fas fa-tasks mr-2"></i>
+                    Exam Management
+                </button>
+                <button 
+                    x-on:click="monthlyExamTab = 'results'"
+                    x-bind:class="monthlyExamTab === 'results' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                >
+                    <i class="fas fa-trophy mr-2"></i>
+                    Results & Rankings
+                </button>
+            </nav>
+        </div>
+
+        <!-- Monthly Periods Tab -->
+        <div x-show="monthlyExamTab === 'overview'" class="p-6">
+            <div x-show="monthlyExams.length === 0" class="text-center py-12">
+                <i class="fas fa-calendar-alt text-6xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600">No monthly exam periods created yet</p>
+                <button 
+                    x-on:click="openCreateMonthlyExamModal = true" 
+                    class="btn-primary mt-4 inline-flex items-center"
+                >
+                    <i class="fas fa-plus mr-2"></i>
+                    Create First Monthly Exam Period
+                </button>
+            </div>
+
+            <div x-show="monthlyExams.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <template x-for="monthExam in monthlyExams" :key="monthExam.id">
+                    <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900" x-text="monthExam.title"></h3>
+                                <p class="text-sm text-gray-600" x-text="monthExam.batch_name"></p>
+                                <p class="text-xs text-gray-500" x-text="`${monthExam.month_name} ${monthExam.year}`"></p>
+                            </div>
+                            <span 
+                                x-text="monthExam.status" 
+                                x-bind:class="monthExam.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'"
+                                class="px-2 py-1 text-xs font-medium rounded-full"
+                            ></span>
+                        </div>
+                        
+                        <div class="space-y-2 mb-4">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Period:</span>
+                                <span class="font-medium" x-text="`${new Date(monthExam.start_date).toLocaleDateString()} - ${new Date(monthExam.end_date).toLocaleDateString()}`"></span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Individual Exams:</span>
+                                <span class="font-medium" x-text="monthExam.individual_exams_count || 0"></span>
+                            </div>
+                        </div>
+                        
+                        <button 
+                            x-on:click="selectMonthlyExam(monthExam)" 
+                            class="w-full btn-primary text-sm"
+                        >
+                            Manage Exams
+                        </button>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Exam Management Tab -->
+        <div x-show="monthlyExamTab === 'management'" class="p-6">
+            <div x-show="monthlyExams.length === 0" class="text-center py-12">
+                <i class="fas fa-tasks text-6xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600">Create a monthly exam period first to manage individual exams</p>
+                <button 
+                    x-on:click="openCreateMonthlyExamModal = true" 
+                    class="btn-primary mt-4 inline-flex items-center"
+                >
+                    <i class="fas fa-plus mr-2"></i>
+                    Create Monthly Exam Period
+                </button>
+            </div>
+
+            <div x-show="monthlyExams.length > 0 && !selectedMonthlyExam" class="text-center py-12">
+                <i class="fas fa-tasks text-6xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600">Select a monthly exam period to manage individual exams</p>
+                <p class="text-sm text-gray-500 mt-2">Go to "Monthly Periods" tab and click "Manage Exams" on a period</p>
+            </div>
+
+            <div x-show="selectedMonthlyExam">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-900" x-text="selectedMonthlyExam?.title"></h3>
+                        <p class="text-gray-600" x-text="selectedMonthlyExam?.batch_name"></p>
+                        <div class="flex space-x-3">
+                            <span class="text-sm text-gray-500">
+                                <i class="fas fa-calendar mr-1"></i>
+                                <span x-text="`${selectedMonthlyExam?.month_name} ${selectedMonthlyExam?.year}`"></span>
+                            </span>
+                            <span class="text-sm text-gray-500">
+                                <i class="fas fa-list-ol mr-1"></i>
+                                <span x-text="`${selectedMonthlyExam?.individual_exams_count || 0} Individual Exams`"></span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button 
+                            x-on:click="selectedMonthlyExam = null; monthlyExamTab = 'overview'" 
+                            class="btn-secondary inline-flex items-center"
+                        >
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Back to List
+                        </button>
+                        <button 
+                            x-on:click="openCreateExamModal = true" 
+                            class="btn-primary inline-flex items-center"
+                        >
+                            <i class="fas fa-plus mr-2"></i>
+                            Add Individual Exam
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Individual Exams List -->
+                    <template x-for="exam in individualExams" :key="exam.id">
+                        <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h4 class="font-medium text-gray-900" x-text="exam.title"></h4>
+                                    <p class="text-sm text-gray-600" x-text="exam.subject"></p>
+                                </div>
+                                <span class="text-sm font-medium text-indigo-600" x-text="`${exam.marks} marks`"></span>
+                            </div>
+                            
+                            <div class="space-y-1 text-sm text-gray-600 mb-4">
+                                <div class="flex justify-between">
+                                    <span>Date:</span>
+                                    <span x-text="new Date(exam.exam_date).toLocaleDateString()"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Duration:</span>
+                                    <span x-text="`${exam.duration} min`"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Marks Entered:</span>
+                                    <span x-text="`${exam.marks_count || 0} students`"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-2">
+                                <button 
+                                    x-on:click="openMarksEntry(exam)" 
+                                    class="flex-1 btn-secondary text-sm flex items-center justify-center"
+                                >
+                                    <i class="fas fa-edit mr-2"></i>
+                                    <span x-text="exam.marks_count > 0 ? 'Edit Marks' : 'Enter Marks'"></span>
+                                </button>
+                                <button 
+                                    x-on:click="deleteIndividualExam(exam)" 
+                                    class="px-3 py-2 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
+                                    title="Delete exam"
+                                >
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div x-show="individualExams.length === 0" class="text-center py-8">
+                    <i class="fas fa-file-alt text-4xl text-gray-400 mb-3"></i>
+                    <p class="text-gray-600">No individual exams created for this period</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results & Rankings Tab -->
+        <div x-show="monthlyExamTab === 'results'" class="p-6">
+            <div x-show="monthlyExams.length === 0" class="text-center py-12">
+                <i class="fas fa-trophy text-6xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600">Create a monthly exam period first to view results</p>
+                <button 
+                    x-on:click="openCreateMonthlyExamModal = true" 
+                    class="btn-primary mt-4 inline-flex items-center"
+                >
+                    <i class="fas fa-plus mr-2"></i>
+                    Create Monthly Exam Period
+                </button>
+            </div>
+
+            <div x-show="monthlyExams.length > 0 && !selectedMonthlyExam" class="text-center py-12">
+                <i class="fas fa-trophy text-6xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600">Select a monthly exam period to view results and rankings</p>
+                <p class="text-sm text-gray-500 mt-2">Go to "Monthly Periods" tab and click "Manage Exams" on a period</p>
+            </div>
+
+            <div x-show="selectedMonthlyExam && individualExams.length === 0" class="text-center py-12">
+                <i class="fas fa-chart-bar text-6xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600">No individual exams created yet for this monthly period</p>
+                <p class="text-sm text-gray-500 mt-2">Create individual exams first to generate results and rankings</p>
+                <button 
+                    x-on:click="monthlyExamTab = 'management'" 
+                    class="btn-primary mt-4 inline-flex items-center"
+                >
+                    <i class="fas fa-plus mr-2"></i>
+                    Add Individual Exams
+                </button>
+            </div>
+
+            <div x-show="selectedMonthlyExam && individualExams.length > 0">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-900">Results & Rankings</h3>
+                        <p class="text-gray-600" x-text="`${selectedMonthlyExam?.name} - ${selectedMonthlyExam?.batch_name}`"></p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <!-- Dynamic button: View Final Ranking (if generated) or Generate Ranking (if not) -->
+                        <button 
+                            x-show="rankingsGenerated"
+                            x-on:click="viewComprehensiveResults()" 
+                            class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg inline-flex items-center shadow-md"
+                        >
+                            <i class="fas fa-eye mr-2"></i>
+                            <span>View Final Ranking</span>
+                            <span class="ml-2 text-xs bg-white bg-opacity-20 px-2 py-0.5 rounded-full">✓ Generated</span>
+                        </button>
+                        <button 
+                            x-show="!rankingsGenerated"
+                            x-on:click="generateRanking()" 
+                            class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2 rounded-lg inline-flex items-center shadow-md"
+                        >
+                            <i class="fas fa-calculator mr-2"></i>
+                            Generate Final Ranking
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Results Table -->
+                <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Rank
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Student
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Total Marks
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Percentage
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Grade
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <template x-for="(result, index) in monthlyResults" :key="result.user_id">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            <span x-text="result.position"></span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center">
+                                                    <span class="text-white text-sm font-medium" x-text="(result.student_name || 'N/A').charAt(0)"></span>
+                                                </div>
+                                                <div class="ml-3">
+                                                    <div class="text-sm font-medium text-gray-900" x-text="result.student_name || 'N/A'"></div>
+                                                    <div class="text-sm text-gray-500" x-text="result.student_phone || 'N/A'"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            <span x-text="result.total_obtained"></span>/<span x-text="result.total_marks"></span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            <span x-text="result.percentage.toFixed(1)"></span>%
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span 
+                                                x-text="result.grade"
+                                                x-bind:class="{
+                                                    'bg-green-100 text-green-800': result.grade === 'A+' || result.grade === 'A',
+                                                    'bg-blue-100 text-blue-800': result.grade === 'A-' || result.grade === 'B',
+                                                    'bg-yellow-100 text-yellow-800': result.grade === 'C' || result.grade === 'D',
+                                                    'bg-red-100 text-red-800': result.grade === 'F'
+                                                }"
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                                            ></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div x-show="monthlyResults.length === 0" class="text-center py-8">
+                        <i class="fas fa-chart-bar text-4xl text-gray-400 mb-3"></i>
+                        <p class="text-gray-600">No results available. Generate ranking to see results.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comprehensive Results Modal -->
+    <div x-show="showComprehensiveResults" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto"
+         aria-labelledby="comprehensive-results-title" 
+         role="dialog" 
+         aria-modal="true"
+         x-cloak>
+        <div class="flex items-center justify-center min-h-screen pt-2 px-2 pb-2 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            
+            <!-- Modal panel - Full height -->
+            <div class="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-2 sm:align-middle sm:max-w-7xl sm:w-full" style="max-height: 95vh;">
+                <div class="bg-white px-4 pt-3 pb-3 sm:p-4 h-full overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="comprehensive-results-title">
+                            Comprehensive Monthly Results
+                        </h3>
+                        <button 
+                            x-on:click="showComprehensiveResults = false"
+                            class="text-gray-400 hover:text-gray-600"
+                        >
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Include the comprehensive results component -->
+                    <div id="comprehensive-results-container">
+                        {% include 'partials/comprehensive_monthly_results.html' %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Monthly Exam Modal -->
+<div x-show="openCreateMonthlyExamModal" 
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 z-50 overflow-y-auto"
+     aria-labelledby="modal-title" 
+     role="dialog" 
+     aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        
+        <div class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div class="absolute top-0 right-0 pt-4 pr-4">
+                <button x-on:click="openCreateMonthlyExamModal = false" 
+                        class="bg-white rounded-md text-gray-400 hover:text-gray-600">
+                    <span class="sr-only">Close</span>
+                    <i class="fas fa-times h-6 w-6"></i>
+                </button>
+            </div>
+            
+            <div class="sm:flex sm:items-start">
+                <div class="w-full">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                        Create Monthly Exam Period
+                    </h3>
+                    
+                    <form x-on:submit.prevent="createMonthlyExam()" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                            <input type="text" 
+                                   x-model="createMonthlyExamForm.title"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                   placeholder="e.g., October 2025 Monthly Exam"
+                                   required>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                                <select x-model="createMonthlyExamForm.month"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="1">January</option>
+                                    <option value="2">February</option>
+                                    <option value="3">March</option>
+                                    <option value="4">April</option>
+                                    <option value="5">May</option>
+                                    <option value="6">June</option>
+                                    <option value="7">July</option>
+                                    <option value="8">August</option>
+                                    <option value="9">September</option>
+                                    <option value="10">October</option>
+                                    <option value="11">November</option>
+                                    <option value="12">December</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                                <select x-model="createMonthlyExamForm.year"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="2024">2024</option>
+                                    <option value="2025">2025</option>
+                                    <option value="2026">2026</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Batch</label>
+                            <select x-model="createMonthlyExamForm.batch_id"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                    required>
+                                <option value="">Select Batch</option>
+                                <template x-for="batch in batches" :key="batch.id">
+                                    <option x-bind:value="batch.id" x-text="batch.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3 pt-4">
+                            <button type="button" 
+                                    x-on:click="openCreateMonthlyExamModal = false"
+                                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button type="submit"
+                                    class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700">
+                                <i class="fas fa-plus mr-2"></i>
+                                Create Exam Period
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Individual Exam Modal -->
+<div x-show="openCreateExamModal" 
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 z-50 overflow-y-auto"
+     aria-labelledby="modal-title" 
+     role="dialog" 
+     aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        
+        <div class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6">
+            <div class="absolute top-0 right-0 pt-4 pr-4">
+                <button x-on:click="openCreateExamModal = false" 
+                        class="bg-white rounded-md text-gray-400 hover:text-gray-600">
+                    <span class="sr-only">Close</span>
+                    <i class="fas fa-times h-6 w-6"></i>
+                </button>
+            </div>
+            
+            <div class="sm:flex sm:items-start">
+                <div class="w-full">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                        Create Individual Exam
+                    </h3>
+                    
+                    <form x-on:submit.prevent="createIndividualExam()" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Exam Name</label>
+                            <input type="text" 
+                                   x-model="createExamForm.title"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                   placeholder="e.g., Algebra Test, Physics Quiz"
+                                   required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                            <select x-model="createExamForm.subject"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                    required>
+                                <option value="">Select Subject</option>
+                                <option value="General Math">General Math</option>
+                                <option value="General Science">General Science</option>
+                                <option value="Mathematics">Mathematics</option>
+                                <option value="Higher Mathematics">Higher Mathematics</option>
+                                <option value="Physics">Physics</option>
+                                <option value="Chemistry">Chemistry</option>
+                                <option value="Biology">Biology</option>
+                                <option value="English">English</option>
+                                <option value="Bangla">Bangla</option>
+                                <option value="ICT">ICT</option>
+                                <option value="General Knowledge">General Knowledge</option>
+                            </select>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Exam Date</label>
+                                <input type="date" 
+                                       x-model="createExamForm.exam_date"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                       required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+                                <input type="number" 
+                                       x-model="createExamForm.duration"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                       min="1"
+                                       placeholder="60"
+                                       required>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Total Marks</label>
+                            <input type="number" 
+                                   x-model="createExamForm.marks"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                   min="1"
+                                   placeholder="100"
+                                   required>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3 pt-4">
+                            <button type="button" 
+                                    x-on:click="openCreateExamModal = false"
+                                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button type="submit"
+                                    class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700">
+                                <i class="fas fa-plus mr-2"></i>
+                                Create Exam
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Marks Entry Modal -->
+<div x-show="openMarksEntryModal" 
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 z-50 overflow-y-auto"
+     aria-labelledby="modal-title" 
+     role="dialog" 
+     aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        
+        <div class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full sm:p-6">
+            <div class="absolute top-0 right-0 pt-4 pr-4">
+                <button x-on:click="openMarksEntryModal = false" 
+                        class="bg-white rounded-md text-gray-400 hover:text-gray-600">
+                    <span class="sr-only">Close</span>
+                    <i class="fas fa-times h-6 w-6"></i>
+                </button>
+            </div>
+            
+            <div class="sm:flex sm:items-start">
+                <div class="w-full">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                        Enter Marks - <span x-text="selectedExamForMarks?.title"></span>
+                        <span class="float-right text-sm text-gray-600">
+                            <i class="fas fa-sms mr-1"></i>SMS: <span x-text="smsBalance || 0"></span>
+                        </span>
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Subject: <span x-text="selectedExamForMarks?.subject"></span> | 
+                        Total Marks: <span x-text="selectedExamForMarks?.marks"></span>
+                    </p>
+                    
+                    <div class="max-h-96 overflow-y-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Student
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Marks Obtained
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <template x-for="(student, index) in marksEntryData" :key="student.student_id">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center">
+                                                    <span class="text-white text-sm font-medium" x-text="student.student_name.charAt(0)"></span>
+                                                </div>
+                                                <div class="ml-3">
+                                                    <div class="text-sm font-medium text-gray-900" x-text="student.student_name"></div>
+                                                    <div class="text-sm text-gray-500" x-text="student.student_phone"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <input type="number" 
+                                                   x-model="student.marks_obtained"
+                                                   x-bind:max="selectedExamForMarks?.marks"
+                                                   min="0"
+                                                   step="0.5"
+                                                   class="w-20 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                                   placeholder="0">
+                                            <span class="text-gray-500 text-sm ml-1">/ <span x-text="selectedExamForMarks?.marks"></span></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        
+                        <div x-show="marksEntryData.length === 0" class="text-center py-8">
+                            <i class="fas fa-users text-4xl text-gray-400 mb-3"></i>
+                            <p class="text-gray-600">No students found for this batch</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-6 border-t">
+                        <button type="button" 
+                                x-on:click="openMarksEntryModal = false"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="button"
+                                x-on:click="saveMarks(false)"
+                                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700">
+                            <i class="fas fa-save mr-2"></i>
+                            Save Marks
+                        </button>
+                        <button type="button"
+                                x-on:click="saveMarks(true)"
+                                class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700">
+                            <i class="fas fa-paper-plane mr-2"></i>
+                            Save & Send SMS
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

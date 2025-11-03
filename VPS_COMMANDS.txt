@@ -1,0 +1,100 @@
+############################################################
+# COPY THESE COMMANDS TO YOUR VPS LINE BY LINE
+# Location: /var/www/saroyarsir
+############################################################
+
+# Step 1: Stop any running Flask servers
+pkill -f "flask run"
+pkill -f "python run.py"
+pkill -f "gunicorn"
+
+# Step 2: Navigate to project
+cd /var/www/saroyarsir
+
+# Step 3: Pull latest code from GitHub
+git pull origin main
+
+# Step 4: Activate virtual environment
+source venv/bin/activate
+
+# Step 5: Update pip
+pip install --upgrade pip
+
+# Step 6: Install dependencies
+pip install -r requirements.txt
+
+# Step 7: Install gunicorn (production server)
+pip install gunicorn
+
+# Step 8: Edit .env file (add your API keys)
+nano .env
+# Press Ctrl+X, then Y, then Enter to save
+
+# Step 9: Create default users (if database is new)
+python create_default_users.py
+
+# Step 10: Run automated deployment
+chmod +x deploy_vps.sh
+./deploy_vps.sh
+
+############################################################
+# ALTERNATIVE: Manual Gunicorn Start (without systemd)
+############################################################
+
+# If you don't want to use systemd, run this instead:
+gunicorn --workers 4 --bind 0.0.0.0:5000 --timeout 120 "app:create_app()"
+
+# Or run in background:
+nohup gunicorn --workers 4 --bind 0.0.0.0:5000 --timeout 120 "app:create_app()" > gunicorn.log 2>&1 &
+
+############################################################
+# USEFUL COMMANDS AFTER DEPLOYMENT
+############################################################
+
+# Check service status
+sudo systemctl status saro
+
+# View live logs
+sudo journalctl -u saro -f
+
+# Restart service
+sudo systemctl restart saro
+
+# Stop service
+sudo systemctl stop saro
+
+# Check if port 5000 is listening
+sudo netstat -tulpn | grep 5000
+
+# Test application
+curl http://localhost:5000/health
+
+############################################################
+# FIREWALL (if needed)
+############################################################
+
+# Allow port 5000
+sudo ufw allow 5000/tcp
+
+# Check firewall status
+sudo ufw status
+
+############################################################
+# IMPORTANT NOTES
+############################################################
+
+# 1. SMS API is hardcoded - works automatically (no configuration needed)
+#    Only need to add (optional):
+#    GOOGLE_API_KEY=your_actual_google_gemini_key
+
+# 2. Default login after deployment:
+#    Phone: 01712345678
+#    Password: admin123
+
+# 3. Database file location:
+#    /var/www/saroyarsir/smartgardenhub.db
+
+# 4. Access application:
+#    http://your-vps-ip:5000
+
+############################################################

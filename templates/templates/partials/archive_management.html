@@ -1,0 +1,354 @@
+<!-- Archive Management Partial -->
+<div x-data="archiveManagement()" x-init="init()">
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header -->
+        <div class="bg-white shadow rounded-lg p-6 mb-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-archive text-gray-600 mr-2"></i>
+                        Archive Management
+                    </h2>
+                    <p class="text-gray-600 mt-1">View and manage archived batches and students</p>
+                </div>
+                <div class="text-sm text-gray-500">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Archived items are hidden from active views but not deleted
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-white shadow rounded-lg mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="flex -mb-px">
+                    <button 
+                        @click="activeTab = 'batches'"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors"
+                        :class="activeTab === 'batches' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    >
+                        <i class="fas fa-layer-group mr-2"></i>
+                        Archived Batches (<span x-text="archivedBatches.length"></span>)
+                    </button>
+                    <button 
+                        @click="activeTab = 'students'"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors"
+                        :class="activeTab === 'students' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    >
+                        <i class="fas fa-user-graduate mr-2"></i>
+                        Archived Students (<span x-text="archivedStudents.length"></span>)
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Archived Batches Tab -->
+        <div x-show="activeTab === 'batches'" class="bg-white shadow rounded-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Archived Batches</h3>
+                <button 
+                    @click="loadArchivedBatches()"
+                    class="text-blue-600 hover:text-blue-700 text-sm"
+                >
+                    <i class="fas fa-sync-alt mr-1"></i>
+                    Refresh
+                </button>
+            </div>
+
+            <!-- Batches List -->
+            <div x-show="archivedBatches.length > 0">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Batch Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Students</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Archived Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Archived By</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="batch in archivedBatches" :key="batch.id">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900" x-text="batch.name"></div>
+                                        <div class="text-sm text-gray-500" x-text="batch.description"></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <span x-text="batch.archived_students_count"></span> / <span x-text="batch.total_students_count"></span> archived
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <span x-text="formatDate(batch.archived_at)"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <span x-text="batch.archived_by_name"></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">
+                                        <span x-text="batch.archive_reason || 'No reason specified'"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button 
+                                            @click="restoreBatch(batch)"
+                                            class="text-green-600 hover:text-green-900 mr-3"
+                                            title="Restore batch"
+                                        >
+                                            <i class="fas fa-undo-alt mr-1"></i>
+                                            Restore
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div x-show="archivedBatches.length === 0" class="text-center py-12">
+                <i class="fas fa-archive text-gray-300 text-5xl mb-4"></i>
+                <p class="text-gray-500 text-lg">No archived batches found</p>
+                <p class="text-gray-400 text-sm mt-2">Batches you archive will appear here</p>
+            </div>
+        </div>
+
+        <!-- Archived Students Tab -->
+        <div x-show="activeTab === 'students'" class="bg-white shadow rounded-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Archived Students</h3>
+                <button 
+                    @click="loadArchivedStudents()"
+                    class="text-blue-600 hover:text-blue-700 text-sm"
+                >
+                    <i class="fas fa-sync-alt mr-1"></i>
+                    Refresh
+                </button>
+            </div>
+
+            <!-- Students List -->
+            <div x-show="archivedStudents.length > 0">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Parents Info</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Admission Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Batch</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Archived Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="student in archivedStudents" :key="student.id">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900" x-text="student.firstName + ' ' + student.lastName"></div>
+                                        <div class="text-xs text-gray-500" x-text="student.school || 'No school'"></div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm">
+                                            <div class="font-medium text-gray-900" x-show="student.guardianName">
+                                                <i class="fas fa-male text-blue-600 mr-1"></i>
+                                                <span x-text="student.guardianName"></span>
+                                            </div>
+                                            <div class="text-gray-700 mt-1" x-show="student.motherName">
+                                                <i class="fas fa-female text-pink-600 mr-1"></i>
+                                                <span x-text="student.motherName"></span>
+                                            </div>
+                                            <div class="text-xs text-gray-400" x-show="!student.guardianName && !student.motherName">
+                                                No parent info
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="student.phoneNumber || student.guardianPhone"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900" x-text="student.admissionDate ? formatDate(student.admissionDate) : 'Not set'"></div>
+                                        <div class="text-xs text-gray-500" x-show="student.admissionDate" x-text="getTimeAgo(student.admissionDate)"></div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-700 max-w-xs truncate" x-text="student.address || 'No address'"></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <span x-text="student.batch ? student.batch.name : 'No batch'"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <span x-text="formatDate(student.archived_at)"></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">
+                                        <div x-text="student.archive_reason || 'No reason specified'"></div>
+                                        <div class="text-xs text-gray-400 mt-1" x-text="'By: ' + (student.archived_by_name || 'Unknown')"></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button 
+                                            @click="restoreStudent(student)"
+                                            class="text-green-600 hover:text-green-900"
+                                            title="Restore student"
+                                        >
+                                            <i class="fas fa-undo-alt mr-1"></i>
+                                            Restore
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div x-show="archivedStudents.length === 0" class="text-center py-12">
+                <i class="fas fa-archive text-gray-300 text-5xl mb-4"></i>
+                <p class="text-gray-500 text-lg">No archived students found</p>
+                <p class="text-gray-400 text-sm mt-2">Students you archive will appear here</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function archiveManagement() {
+    return {
+        activeTab: 'batches',
+        archivedBatches: [],
+        archivedStudents: [],
+
+        async init() {
+            await this.loadArchivedBatches();
+            await this.loadArchivedStudents();
+        },
+
+        async loadArchivedBatches() {
+            try {
+                const response = await fetch('/api/batches/archived', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    this.archivedBatches = data.data.batches || [];
+                } else {
+                    console.error('Failed to load archived batches');
+                }
+            } catch (error) {
+                console.error('Error loading archived batches:', error);
+            }
+        },
+
+        async loadArchivedStudents() {
+            try {
+                const response = await fetch('/api/students/archived', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    this.archivedStudents = data.data.students || [];
+                } else {
+                    console.error('Failed to load archived students');
+                }
+            } catch (error) {
+                console.error('Error loading archived students:', error);
+            }
+        },
+
+        async restoreBatch(batch) {
+            if (!confirm(`Restore batch "${batch.name}" and its ${batch.archived_students_count} students?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/batches/${batch.id}/restore`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ restore_students: true })
+                });
+
+                if (response.ok) {
+                    if (window.utils) {
+                        window.utils.showToast('Batch restored successfully!', 'success');
+                    } else {
+                        alert('Batch restored successfully!');
+                    }
+                    await this.loadArchivedBatches();
+                    await this.loadArchivedStudents();
+                } else {
+                    const error = await response.json();
+                    alert('Failed to restore batch: ' + (error.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error restoring batch:', error);
+                alert('Failed to restore batch');
+            }
+        },
+
+        async restoreStudent(student) {
+            if (!confirm(`Restore student "${student.firstName} ${student.lastName}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/students/${student.id}/restore`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    if (window.utils) {
+                        window.utils.showToast('Student restored successfully!', 'success');
+                    } else {
+                        alert('Student restored successfully!');
+                    }
+                    await this.loadArchivedStudents();
+                } else {
+                    const error = await response.json();
+                    alert('Failed to restore student: ' + (error.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error restoring student:', error);
+                alert('Failed to restore student');
+            }
+        },
+
+        formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        },
+        
+        getTimeAgo(dateString) {
+            if (!dateString) return '';
+            const admissionDate = new Date(dateString);
+            const today = new Date();
+            const diffTime = Math.abs(today - admissionDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 30) {
+                return `${diffDays} days ago`;
+            } else if (diffDays < 365) {
+                const months = Math.floor(diffDays / 30);
+                return `${months} month${months > 1 ? 's' : ''} ago`;
+            } else {
+                const years = Math.floor(diffDays / 365);
+                return `${years} year${years > 1 ? 's' : ''} ago`;
+            }
+        }
+    };
+}
+</script>

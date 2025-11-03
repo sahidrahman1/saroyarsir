@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}GS Student Nursing Center by Golam Sarowar Sir - Mathematics & Science Coaching Center{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
+    <!-- Hero Section -->
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <!-- Service Icons Row -->
+        <div class="flex justify-center mb-12">
+            <div class="bg-white rounded-2xl p-4 shadow-xl">
+                <div class="flex space-x-4">
+                    <div class="bg-blue-600 p-4 rounded-xl">
+                        <i class="fas fa-book text-white text-xl"></i>
+                    </div>
+                    <div class="bg-green-600 p-4 rounded-xl">
+                        <i class="fas fa-users text-white text-xl"></i>
+                    </div>
+                    <div class="bg-orange-600 p-4 rounded-xl">
+                        <i class="fas fa-clock text-white text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Title -->
+        <div class="text-center text-white mb-16">
+            <h1 class="text-5xl md:text-6xl font-bold mb-6">GS Student Nursing Center</h1>
+            <h2 class="text-2xl md:text-3xl font-semibold text-yellow-300 mb-4">by Golam Sarowar Sir</h2>
+            <p class="text-lg text-blue-300">Excellence in Mathematics & Science Education for students from class 6 to 10.</p>
+        </div>
+
+        <!-- Service Cards -->
+        <div class="grid md:grid-cols-3 gap-8 mb-16">
+            <!-- Mathematics Excellence -->
+            <div class="bg-white rounded-2xl p-8 shadow-xl text-center hover:transform hover:scale-105 transition-all duration-300">
+                <div class="bg-blue-600 p-4 rounded-xl w-16 h-16 mx-auto mb-6 flex items-center justify-center">
+                    <i class="fas fa-calculator text-white text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Mathematics Excellence</h3>
+                <p class="text-gray-600">Special training in mathematics with excellence and simplicity</p>
+            </div>
+
+            <!-- Science Education -->
+            <div class="bg-white rounded-2xl p-8 shadow-xl text-center hover:transform hover:scale-105 transition-all duration-300">
+                <div class="bg-green-600 p-4 rounded-xl w-16 h-16 mx-auto mb-6 flex items-center justify-center">
+                    <i class="fas fa-flask text-white text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Science Education</h3>
+                <p class="text-gray-600">Complete courses in Physics, Chemistry and Biology</p>
+            </div>
+
+            <!-- Goal Achievement -->
+            <div class="bg-white rounded-2xl p-8 shadow-xl text-center hover:transform hover:scale-105 transition-all duration-300">
+                <div class="bg-orange-600 p-4 rounded-xl w-16 h-16 mx-auto mb-6 flex items-center justify-center">
+                    <i class="fas fa-trophy text-white text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Goal Achievement</h3>
+                <p class="text-gray-600">Guarantee of highest results in examinations</p>
+            </div>
+        </div>
+
+        <!-- Top Performers of the Month Section -->
+        <div id="topPerformersSection" class="mb-16" style="display: none;">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-white mb-2">
+                    <i class="fas fa-star text-yellow-300 mr-2"></i>
+                    Top Performers of the Month
+                </h2>
+                <p class="text-blue-200">Excellence Recognized</p>
+            </div>
+            
+            <div id="topPerformersContainer" class="space-y-8">
+                <!-- Featured exam results will be inserted here dynamically -->
+            </div>
+        </div>
+
+        <!-- Call to Action -->
+        <div class="text-center">
+            <p class="text-xl text-white mb-8">Ready to start your journey in Mathematics & Science?</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button onclick="openLoginModal('student')" class="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-xl transition-all duration-300 transform hover:scale-105">
+                    <i class="fas fa-user-graduate mr-3"></i>Student Login
+                </button>
+                <button onclick="openLoginModal('teacher')" class="bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg shadow-xl transition-all duration-300 transform hover:scale-105 border-2 border-white hover:bg-blue-50">
+                    <i class="fas fa-chalkboard-teacher mr-3"></i>Teacher Login
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load top performers on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadTopPerformers();
+});
+
+async function loadTopPerformers() {
+    try {
+        const response = await fetch('/api/monthly-exams/homepage-top-performers');
+        const data = await response.json();
+        
+        if (data.success && data.data.featured_results && data.data.featured_results.length > 0) {
+            const container = document.getElementById('topPerformersContainer');
+            const section = document.getElementById('topPerformersSection');
+            
+            container.innerHTML = '';
+            
+            data.data.featured_results.forEach(exam => {
+                const examCard = document.createElement('div');
+                examCard.className = 'bg-white rounded-2xl shadow-xl p-6';
+                
+                let studentsHTML = '';
+                exam.top_students.forEach((student, index) => {
+                    const medalEmoji = index === 0 ? '🥇' : (index === 1 ? '🥈' : '🥉');
+                    const bgColor = index === 0 ? 'bg-yellow-50' : (index === 1 ? 'bg-gray-50' : 'bg-orange-50');
+                    
+                    studentsHTML += `
+                        <div class="${bgColor} rounded-xl p-4 flex items-center justify-between">
+                            <div class="flex items-center space-x-4">
+                                <div class="text-4xl">${medalEmoji}</div>
+                                <div>
+                                    <div class="font-bold text-gray-800 text-lg">${student.student_name}</div>
+                                    <div class="text-sm text-gray-600">Roll: ${student.roll_number || 'N/A'}</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-bold text-blue-600">${student.percentage}%</div>
+                                <div class="text-sm text-gray-600">${student.total_marks}/${student.total_possible}</div>
+                                <div class="text-sm font-semibold text-green-600">Grade: ${student.grade}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                examCard.innerHTML = `
+                    <div class="mb-4">
+                        <h3 class="text-2xl font-bold text-gray-800">${exam.exam_title}</h3>
+                        <p class="text-gray-600">${exam.batch_name} - ${exam.month}/${exam.year}</p>
+                    </div>
+                    <div class="space-y-3">
+                        ${studentsHTML}
+                    </div>
+                `;
+                
+                container.appendChild(examCard);
+            });
+            
+            // Show the section
+            section.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Failed to load top performers:', error);
+    }
+}
+</script>
+
+<!-- Login Modal -->
+<div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8">
+            <div class="text-center mb-6">
+                <h2 id="modalTitle" class="text-2xl font-bold text-gray-800">Login</h2>
+                <p class="text-gray-600 mt-2">Enter your credentials to continue</p>
+            </div>
+            <form id="loginForm" onsubmit="return handleLogin(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Phone Number</label>
+                    <input type="tel" id="phoneNumber" name="phoneNumber" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" 
+                           placeholder="Enter phone number">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                    <input type="password" id="password" name="password" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" 
+                           placeholder="Enter password">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-all duration-300">
+                    Login
+                </button>
+            </form>
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentLoginType = 'student';
+
+function openLoginModal(type) {
+    currentLoginType = type;
+    const modal = document.getElementById('loginModal');
+    const title = document.getElementById('modalTitle');
+    
+    if (type === 'student') {
+        title.textContent = 'Student Login';
+    } else {
+        title.textContent = 'Teacher Login';
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function closeLoginModal() {
+    document.getElementById('loginModal').classList.add('hidden');
+    document.getElementById('loginForm').reset();
+}
+
+function handleLogin(event) {
+    event.preventDefault();
+    
+    const phoneNumber = document.getElementById('phoneNumber').value;
+    const password = document.getElementById('password').value;
+    
+    // Create form data and submit
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("auth.login") }}';
+    
+    const phoneInput = document.createElement('input');
+    phoneInput.type = 'hidden';
+    phoneInput.name = 'phoneNumber';
+    phoneInput.value = phoneNumber;
+    
+    const passwordInput = document.createElement('input');
+    passwordInput.type = 'hidden';
+    passwordInput.name = 'password';
+    passwordInput.value = password;
+    
+    form.appendChild(phoneInput);
+    form.appendChild(passwordInput);
+    document.body.appendChild(form);
+    form.submit();
+    
+    return false;
+}
+
+// Close modal when clicking outside
+document.getElementById('loginModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeLoginModal();
+    }
+});
+</script>
+
+    <!-- About Section -->
+    <div class="bg-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">Meet Our Founder</h2>
+                <p class="text-lg text-blue-600 font-semibold">Excellence in Education</p>
+            </div>
+            
+            <div class="bg-gradient-to-r from-blue-50 to-white rounded-3xl shadow-xl p-8 max-w-4xl mx-auto">
+                <div class="flex flex-col lg:flex-row items-center gap-8">
+                    <div class="flex-shrink-0">
+                        <div class="w-48 h-48 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-white text-6xl"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 text-center lg:text-left">
+                        <h3 class="text-3xl font-bold text-gray-800 mb-2">Golam Sarowar Sir</h3>
+                        <p class="text-xl text-green-600 font-semibold mb-4">Mathematics & Science Expert</p>
+                        
+                        <div class="space-y-3 mb-6">
+                            <div class="flex items-center justify-center lg:justify-start">
+                                <div class="bg-blue-600 p-2 rounded-lg mr-3">
+                                    <i class="fas fa-graduation-cap text-white"></i>
+                                </div>
+                                <span class="text-gray-700">Mathematics & Science Teacher - 20+ Years Experience</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-center lg:justify-start">
+                                <div class="bg-green-600 p-2 rounded-lg mr-3">
+                                    <i class="fas fa-users text-white"></i>
+                                </div>
+                                <span class="text-gray-700">Mathematics & Science Expert</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-center lg:justify-start">
+                                <div class="bg-orange-600 p-2 rounded-lg mr-3">
+                                    <i class="fas fa-school text-white"></i>
+                                </div>
+                                <span class="text-gray-700">Assistant Math Teacher at Mohadebpur Sarba Mongala Pilot High School, Mohadevpur, Naogaon</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-center lg:justify-start">
+                                <div class="bg-purple-600 p-2 rounded-lg mr-3">
+                                    <i class="fas fa-award text-white"></i>
+                                </div>
+                                <span class="text-gray-700">5000+ Successful Students</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-center lg:justify-start">
+                                <div class="bg-green-600 p-2 rounded-lg mr-3">
+                                    <i class="fas fa-phone text-white"></i>
+                                </div>
+                                <span class="text-gray-700">01762602056</span>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-blue-100 p-6 rounded-xl">
+                            <p class="text-blue-800 italic leading-relaxed">
+                                "With years of experience in Mathematics and Science education, I am committed to providing students with the knowledge and skills they need to excel in their academic journey. My goal is to make complex mathematical and scientific concepts accessible and engaging for every student."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="flex items-center justify-center mb-4">
+                <div class="bg-blue-600 p-2 rounded-lg mr-3">
+                    <i class="fas fa-graduation-cap text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold">GS Student Nursing Center by Golam Sarowar Sir</h3>
+            </div>
+            <p class="text-gray-400 mb-2">Excellence in Mathematics & Science Education</p>
+            <p class="text-gray-400 mb-4">
+                <i class="fas fa-phone mr-2"></i>01762602056
+            </p>
+            <p class="text-gray-500 text-sm mb-2">© 2025 All Rights Reserved</p>
+            <p class="text-gray-400 text-sm">
+                Created by <a href="https://www.facebook.com/shahid.rahman111" target="_blank" class="text-blue-400 hover:text-blue-300 transition-colors duration-200 font-semibold">Sahid Rahman</a> - CEO of Praggo
+            </p>
+        </div>
+    </footer>
+{% endblock %}

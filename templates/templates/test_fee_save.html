@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Fee Save</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Test Fee Save Endpoint</h1>
+    
+    <div>
+        <label>Student ID: <input type="number" id="studentId" value="5"></label><br>
+        <label>Month: <input type="number" id="month" value="1" min="1" max="12"></label><br>
+        <label>Year: <input type="number" id="year" value="2025"></label><br>
+        <label>Amount: <input type="number" id="amount" value="100"></label><br>
+        <button onclick="testSave()">Test Save</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        async function testSave() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="result">Testing...</div>';
+            
+            const payload = {
+                student_id: parseInt(document.getElementById('studentId').value),
+                month: parseInt(document.getElementById('month').value),
+                year: parseInt(document.getElementById('year').value),
+                amount: parseFloat(document.getElementById('amount').value)
+            };
+            
+            console.log('Sending payload:', payload);
+            
+            try {
+                const response = await fetch('/api/fees/monthly-save', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response OK:', response.ok);
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (response.ok) {
+                    results.innerHTML = `
+                        <div class="result success">
+                            <strong>✅ SUCCESS!</strong><br>
+                            Status: ${response.status}<br>
+                            Message: ${data.message}<br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    results.innerHTML = `
+                        <div class="result error">
+                            <strong>❌ ERROR</strong><br>
+                            Status: ${response.status}<br>
+                            Message: ${data.message || data.error}<br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                results.innerHTML = `
+                    <div class="result error">
+                        <strong>❌ EXCEPTION</strong><br>
+                        ${err.message}<br>
+                        <pre>${err.stack}</pre>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!-- Question Builder Component -->
+<div x-show="activeTab === 'questions'" class="space-y-6">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Question Builder</h2>
+            <p class="text-gray-600">Create and manage exam questions</p>
+        </div>
+        <button 
+            x-on:click="openCreateQuestionModal = true" 
+            class="btn-primary inline-flex items-center"
+        >
+            <i class="fas fa-plus mr-2"></i>
+            Add Question
+        </button>
+    </div>
+
+    <!-- Question Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-question-circle text-2xl text-blue-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Questions</p>
+                    <p class="text-2xl font-semibold text-gray-900" x-text="questionStats.total || 0"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-list text-2xl text-green-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Multiple Choice</p>
+                    <p class="text-2xl font-semibold text-gray-900" x-text="questionStats.mcq || 0"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-edit text-2xl text-orange-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Short Answer</p>
+                    <p class="text-2xl font-semibold text-gray-900" x-text="questionStats.short || 0"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-book text-2xl text-purple-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Subjects</p>
+                    <p class="text-2xl font-semibold text-gray-900" x-text="questionStats.subjects || 0"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search Questions</label>
+                <input 
+                    type="text" 
+                    x-model="questionSearchTerm" 
+                    x-on:input="filterQuestions()"
+                    placeholder="Search by question text..." 
+                    class="form-input"
+                >
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                <select x-model="selectedQuestionSubject" x-on:change="filterQuestions()" class="form-select">
+                    <option value="">All Subjects</option>
+                    <template x-for="subject in subjects" :key="subject">
+                        <option :value="subject" x-text="subject"></option>
+                    </template>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                <select x-model="selectedQuestionType" x-on:change="filterQuestions()" class="form-select">
+                    <option value="">All Types</option>
+                    <option value="mcq">Multiple Choice</option>
+                    <option value="short">Short Answer</option>
+                    <option value="essay">Essay</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+                <select x-model="selectedQuestionDifficulty" x-on:change="filterQuestions()" class="form-select">
+                    <option value="">All Levels</option>
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Questions List -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-medium text-gray-900">Question Bank</h3>
+            <div class="flex space-x-2">
+                <button 
+                    x-on:click="importQuestions()" 
+                    class="btn-secondary inline-flex items-center text-sm"
+                >
+                    <i class="fas fa-upload mr-2"></i>
+                    Import
+                </button>
+                <button 
+                    x-on:click="exportQuestions()" 
+                    class="btn-secondary inline-flex items-center text-sm"
+                >
+                    <i class="fas fa-download mr-2"></i>
+                    Export
+                </button>
+            </div>
+        </div>
+        
+        <div class="divide-y divide-gray-200">
+            <template x-for="question in filteredQuestions" :key="question.id">
+                <div class="p-6">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <span 
+                                    x-text="question.type"
+                                    x-bind:class="{
+                                        'bg-blue-100 text-blue-800': question.type === 'mcq',
+                                        'bg-green-100 text-green-800': question.type === 'short',
+                                        'bg-purple-100 text-purple-800': question.type === 'essay'
+                                    }"
+                                    class="px-2 py-1 text-xs font-medium rounded-full uppercase"
+                                ></span>
+                                <span class="text-sm text-gray-500" x-text="question.subject"></span>
+                                <span 
+                                    x-text="question.difficulty"
+                                    x-bind:class="{
+                                        'bg-green-100 text-green-800': question.difficulty === 'easy',
+                                        'bg-yellow-100 text-yellow-800': question.difficulty === 'medium',
+                                        'bg-red-100 text-red-800': question.difficulty === 'hard'
+                                    }"
+                                    class="px-2 py-1 text-xs font-medium rounded-full capitalize"
+                                ></span>
+                            </div>
+                            
+                            <h4 class="text-lg font-medium text-gray-900 mb-3" x-text="question.question_text"></h4>
+                            
+                            <!-- MCQ Options -->
+                            <div x-show="question.type === 'mcq'" class="space-y-2 mb-3">
+                                <template x-for="(option, index) in question.options" :key="index">
+                                    <div class="flex items-center">
+                                        <span 
+                                            x-bind:class="option.is_correct ? 'bg-green-100 text-green-800 font-medium' : 'bg-gray-100 text-gray-700'"
+                                            class="px-2 py-1 text-sm rounded mr-3"
+                                            x-text="String.fromCharCode(65 + index)"
+                                        ></span>
+                                        <span x-text="option.text" class="text-sm"></span>
+                                    </div>
+                                </template>
+                            </div>
+                            
+                            <!-- Answer for non-MCQ -->
+                            <div x-show="question.type !== 'mcq' && question.answer" class="mb-3">
+                                <p class="text-sm text-gray-600">
+                                    <strong>Answer:</strong> 
+                                    <span x-text="question.answer.substring(0, 100) + (question.answer.length > 100 ? '...' : '')"></span>
+                                </p>
+                            </div>
+                            
+                            <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                <span>
+                                    <i class="fas fa-star mr-1"></i>
+                                    <span x-text="question.marks"></span> marks
+                                </span>
+                                <span>
+                                    <i class="fas fa-clock mr-1"></i>
+                                    Created <span x-text="question.created_at"></span>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="ml-4 flex space-x-2">
+                            <button 
+                                x-on:click="previewQuestion(question)" 
+                                class="text-blue-600 hover:text-blue-900"
+                                title="Preview"
+                            >
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button 
+                                x-on:click="editQuestion(question)" 
+                                class="text-indigo-600 hover:text-indigo-900"
+                                title="Edit"
+                            >
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button 
+                                x-on:click="duplicateQuestion(question)" 
+                                class="text-green-600 hover:text-green-900"
+                                title="Duplicate"
+                            >
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button 
+                                x-on:click="deleteQuestion(question.id)" 
+                                class="text-red-600 hover:text-red-900"
+                                title="Delete"
+                            >
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <div x-show="filteredQuestions.length === 0" class="text-center py-12">
+            <i class="fas fa-question-circle text-6xl text-gray-400 mb-4"></i>
+            <p class="text-gray-600">No questions found</p>
+            <button 
+                x-on:click="openCreateQuestionModal = true" 
+                class="btn-primary mt-4 inline-flex items-center"
+            >
+                <i class="fas fa-plus mr-2"></i>
+                Create First Question
+            </button>
+        </div>
+    </div>
+
+    <!-- Question Templates -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Quick Templates</h3>
+        </div>
+        
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button 
+                    x-on:click="createFromTemplate('mcq')" 
+                    class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+                >
+                    <i class="fas fa-list text-3xl text-blue-600 mb-3"></i>
+                    <h4 class="font-medium text-gray-900">Multiple Choice</h4>
+                    <p class="text-sm text-gray-500 mt-1">Create MCQ with 4 options</p>
+                </button>
+                
+                <button 
+                    x-on:click="createFromTemplate('short')" 
+                    class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+                >
+                    <i class="fas fa-edit text-3xl text-green-600 mb-3"></i>
+                    <h4 class="font-medium text-gray-900">Short Answer</h4>
+                    <p class="text-sm text-gray-500 mt-1">Create short answer question</p>
+                </button>
+                
+                <button 
+                    x-on:click="createFromTemplate('essay')" 
+                    class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+                >
+                    <i class="fas fa-file-alt text-3xl text-purple-600 mb-3"></i>
+                    <h4 class="font-medium text-gray-900">Essay Question</h4>
+                    <p class="text-sm text-gray-500 mt-1">Create essay type question</p>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

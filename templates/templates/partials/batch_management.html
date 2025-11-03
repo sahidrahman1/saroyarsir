@@ -1,0 +1,601 @@
+<!-- Updated Template - Simplified Batch Interface -->
+<div x-data="batchManagement()" x-init="loadBatches()">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+            📚 Batch Management
+        </h2>
+        <button @click="showAddModal = true" class="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+            <i class="fas fa-plus mr-2"></i>Create New Batch
+        </button>
+    </div>
+
+    <!-- Search -->
+    <div class="card mb-6">
+        <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+                <input type="text" 
+                       x-model="searchTerm" 
+                       @input="filterBatches()"
+                       placeholder="Search batches..." 
+                       class="form-input">
+            </div>
+        </div>
+    </div>
+
+    <!-- Batches Grid -->
+    <div x-show="loading" class="text-center py-8">
+        <div class="spinner mx-auto"></div>
+        <p class="mt-2 text-gray-600">Loading batches...</p>
+    </div>
+
+    <div x-show="!loading && filteredBatches.length === 0" class="text-center py-8">
+        <i class="fas fa-graduation-cap text-4xl text-gray-400 mb-4"></i>
+        <p class="text-gray-600">No batches found</p>
+    </div>
+
+    <div x-show="!loading && filteredBatches.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <template x-for="batch in filteredBatches" :key="batch.id">
+            <div class="card card-hover">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900" x-text="batch.name"></h3>
+                        <p class="text-gray-600" x-text="batch.subject"></p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Class:</span>
+                        <span class="font-medium" x-text="batch.class || 'Not set'"></span>
+                    </div>
+                    
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Students:</span>
+                        <span class="font-medium" x-text="`${batch.currentStudents || 0}/${batch.maxStudents || 50}`"></span>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mt-4">
+                    <div class="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>Enrollment</span>
+                        <span x-text="Math.round(((batch.currentStudents || 0) / (batch.maxStudents || 1)) * 100) + '%'"></span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full" 
+                             :style="`width: ${Math.min(((batch.currentStudents || 0) / (batch.maxStudents || 1)) * 100, 100)}%`">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex justify-end space-x-2 mt-4 pt-4 border-t border-gray-200">
+                    <button @click="editBatch(batch)" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors duration-200" title="Edit Batch">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button @click="viewStudents(batch)" class="bg-green-500 hover:bg-green-600 text-white p-2 rounded-lg transition-colors duration-200" title="View Students">
+                        <i class="fas fa-users"></i>
+                    </button>
+                    <button @click="archiveBatch(batch)" class="bg-orange-500 hover:bg-orange-600 text-white p-2 rounded-lg transition-colors duration-200" title="Archive Batch">
+                        <i class="fas fa-archive"></i>
+                    </button>
+                    <button @click="deleteBatch(batch)" class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition-colors duration-200" title="Delete Batch">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Add/Edit Batch Modal -->
+    <div x-show="showAddModal || showEditModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform scale-95"
+                 x-transition:enter-end="opacity-100 transform scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 transform scale-100"
+                 x-transition:leave-end="opacity-0 transform scale-95"
+                 class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+                
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900" x-text="showAddModal ? 'Add New Batch' : 'Edit Batch'"></h3>
+                </div>
+
+                <form @submit.prevent="saveBatch()" class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Batch Name</label>
+                        <input type="text" x-model="batchForm.name" required class="form-input" placeholder="Enter batch name">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Class</label>
+                        <select x-model="batchForm.class" required class="form-input">
+                            <option value="">Select Class</option>
+                            <option value="Class 1">Class 1</option>
+                            <option value="Class 2">Class 2</option>
+                            <option value="Class 3">Class 3</option>
+                            <option value="Class 4">Class 4</option>
+                            <option value="Class 5">Class 5</option>
+                            <option value="Class 6">Class 6</option>
+                            <option value="Class 7">Class 7</option>
+                            <option value="Class 8">Class 8</option>
+                            <option value="Class 9">Class 9</option>
+                            <option value="Class 10">Class 10</option>
+                            <option value="HSC 1st Year">HSC 1st Year</option>
+                            <option value="HSC 2nd Year">HSC 2nd Year</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                        <select x-model="batchForm.subject" required class="form-input">
+                            <option value="">Select Subject</option>
+                            <option value="General Math">General Math</option>
+                            <option value="General Science">General Science</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Higher Mathematics">Higher Mathematics</option>
+                            <option value="Physics">Physics</option>
+                            <option value="Chemistry">Chemistry</option>
+                            <option value="Biology">Biology</option>
+                            <option value="English">English</option>
+                            <option value="Bangla">Bangla</option>
+                            <option value="ICT">ICT</option>
+                        </select>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" @click="closeModal()" class="btn-secondary">Cancel</button>
+                        <button type="submit" :disabled="saving" class="btn-primary">
+                            <span x-show="!saving" x-text="showAddModal ? 'Add Batch' : 'Update Batch'"></span>
+                            <span x-show="saving" class="flex items-center">
+                                <div class="spinner mr-2"></div>
+                                Saving...
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern Batch Deletion Confirmation Modal -->
+    <div x-show="showDeleteModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 backdrop-blur-sm">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform scale-95"
+                 x-transition:enter-end="opacity-100 transform scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 transform scale-100"
+                 x-transition:leave-end="opacity-0 transform scale-95"
+                 class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+                
+                <!-- Header with gradient -->
+                <div class="px-6 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-exclamation-triangle text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">⚠️ Confirm Batch Deletion</h3>
+                            <p class="text-red-100 text-sm">This action cannot be undone</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content -->
+                <div class="p-6">
+                    <div class="bg-red-50 border-l-4 border-red-400 rounded-r-lg p-4 mb-6">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-trash-alt text-red-600 text-lg"></i>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <h4 class="text-lg font-semibold text-red-900 mb-2">You are about to permanently delete:</h4>
+                                
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-700">Batch Name:</span>
+                                        <span class="text-gray-900 font-semibold" x-text="batchToDelete?.name || 'Unknown'"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-700">Class:</span>
+                                        <span class="text-gray-900" x-text="batchToDelete?.class || 'Not set'"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-700">Subject:</span>
+                                        <span class="text-gray-900" x-text="batchToDelete?.subject || 'Not set'"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-700">Current Students:</span>
+                                        <span class="text-gray-900 font-semibold" x-text="(batchToDelete?.currentStudents || 0) + ' students'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
+                            <p class="text-yellow-800 text-sm">
+                                <strong>Warning:</strong> This will permanently remove the batch from the database. All student associations will be cleared.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="text-center text-gray-600">
+                        <p class="text-lg font-medium">Are you absolutely sure?</p>
+                        <p class="text-sm">Type <span class="bg-gray-100 px-2 py-1 rounded font-mono">DELETE</span> to confirm</p>
+                    </div>
+
+                    <div class="mt-4">
+                        <input type="text" 
+                               x-model="deleteConfirmText" 
+                               placeholder="Type DELETE to confirm"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-colors text-center font-mono"
+                               @input="deleteConfirmText = $event.target.value.toUpperCase()">
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+                    <button @click="closeDeleteModal()" 
+                            class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </button>
+                    <button @click="confirmBatchDeletion()" 
+                            :disabled="deleteConfirmText !== 'DELETE' || deleting"
+                            :class="deleteConfirmText === 'DELETE' && !deleting ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-300 cursor-not-allowed'"
+                            class="px-6 py-2 text-white rounded-lg transition-colors duration-200">
+                        <span x-show="!deleting" class="flex items-center">
+                            <i class="fas fa-trash mr-2"></i>Delete Permanently
+                        </span>
+                        <span x-show="deleting" class="flex items-center">
+                            <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                            Deleting...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Modal -->
+    <div x-show="showStudentsModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                <div class="px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900">Students in <span x-text="selectedBatch?.name"></span></h3>
+                        <button @click="showStudentsModal = false" class="text-gray-400 hover:text-gray-600 text-xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6 overflow-y-auto flex-1">
+                    <div x-show="batchStudents.length === 0" class="text-center py-8">
+                        <i class="fas fa-users text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600">No students in this batch</p>
+                    </div>
+                    
+                    <div x-show="batchStudents.length > 0" class="space-y-3">
+                        <template x-for="student in batchStudents" :key="student.id">
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <span class="text-blue-600 font-medium text-sm" x-text="(student.first_name || student.firstName || '').charAt(0) + (student.last_name || student.lastName || '').charAt(0)"></span>
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-gray-900" x-text="(student.full_name || student.first_name + ' ' + student.last_name || student.firstName + ' ' + student.lastName || 'Unknown Student')"></div>
+                                        <div class="text-xs text-gray-500" x-text="(student.phone || student.phoneNumber || 'No phone')"></div>
+                                    </div>
+                                </div>
+                                <span :class="{
+                                    'badge-success': (student.is_active !== undefined ? student.is_active : student.isActive),
+                                    'badge-danger': !(student.is_active !== undefined ? student.is_active : student.isActive)
+                                }" class="badge" x-text="(student.is_active !== undefined ? student.is_active : student.isActive) ? 'Active' : 'Inactive'"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                
+                <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600" x-text="`${batchStudents.length} student${batchStudents.length !== 1 ? 's' : ''} total`"></span>
+                        <button @click="showStudentsModal = false" class="btn-secondary">
+                            <i class="fas fa-arrow-left mr-2"></i>Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function batchManagement() {
+    return {
+        batches: [],
+        filteredBatches: [],
+        batchStudents: [],
+        loading: false,
+        saving: false,
+        deleting: false,
+        showAddModal: false,
+        showEditModal: false,
+        showStudentsModal: false,
+        showDeleteModal: false,
+        searchTerm: '',
+        selectedBatch: null,
+        batchToDelete: null,
+        deleteConfirmText: '',
+        batchForm: {
+            id: null,
+            name: '',
+            class: '',
+            subject: ''
+        },
+
+        // Modern toast notification
+        showToast(message, type = 'info', duration = 5000) {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full`;
+            
+            const colors = {
+                success: 'bg-green-500 text-white',
+                error: 'bg-red-500 text-white',
+                warning: 'bg-yellow-500 text-white',
+                info: 'bg-blue-500 text-white'
+            };
+            
+            toast.className += ` ${colors[type] || colors.info}`;
+            toast.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : type === 'warning' ? 'exclamation' : 'info'} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 100);
+            
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, duration);
+        },
+
+        async loadBatches() {
+            this.loading = true;
+            try {
+                const response = await fetch('/api/batches');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    this.batches = result.data;
+                    console.log('Loaded batches:', this.batches);
+                } else {
+                    console.error('API response format error:', result);
+                    this.batches = [];
+                }
+                
+                this.filterBatches();
+            } catch (error) {
+                console.error('Failed to load batches:', error);
+                this.showToast('Failed to load batches', 'error');
+                this.batches = [];
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        filterBatches() {
+            this.filteredBatches = this.batches.filter(batch => {
+                const matchesSearch = !this.searchTerm || 
+                    batch.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    batch.subject.toLowerCase().includes(this.searchTerm.toLowerCase());
+                
+                return matchesSearch;
+            });
+        },
+
+        editBatch(batch) {
+            this.batchForm = { ...batch };
+            this.showEditModal = true;
+        },
+
+        async viewStudents(batch) {
+            this.selectedBatch = batch;
+            try {
+                const response = await fetch(`/api/batches/${batch.id}/students`);
+                const result = await response.json();
+                
+                if (result.success && result.data && result.data.students) {
+                    this.batchStudents = result.data.students;
+                } else {
+                    console.error('Students API response format error:', result);
+                    this.batchStudents = [];
+                }
+                
+                this.showStudentsModal = true;
+            } catch (error) {
+                console.error('Failed to load students:', error);
+                this.showToast('Failed to load students', 'error');
+                this.batchStudents = [];
+            }
+        },
+
+        async saveBatch() {
+            this.saving = true;
+            console.log('Saving batch:', this.batchForm); // Debug log
+            try {
+                const url = this.showAddModal ? '/api/batches' : `/api/batches/${this.batchForm.id}`;
+                const method = this.showAddModal ? 'POST' : 'PUT';
+                
+                console.log('Request URL:', url, 'Method:', method); // Debug log
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(this.batchForm)
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to save batch');
+                }
+                
+                console.log('Server response:', result); // Debug log
+                
+                this.showToast(result.message || (this.showAddModal ? 'Batch added successfully' : 'Batch updated successfully'), 'success');
+                this.closeModal();
+                await this.loadBatches();
+                
+            } catch (error) {
+                console.error('Failed to save batch:', error);
+                this.showToast('Failed to save batch: ' + error.message, 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        async deleteBatch(batch) {
+            // Show the modern software-based confirmation modal
+            this.batchToDelete = batch;
+            this.deleteConfirmText = '';
+            this.showDeleteModal = true;
+        },
+
+        closeDeleteModal() {
+            this.showDeleteModal = false;
+            this.batchToDelete = null;
+            this.deleteConfirmText = '';
+        },
+
+        async confirmBatchDeletion() {
+            if (!this.batchToDelete || this.deleteConfirmText !== 'DELETE') return;
+            
+            this.deleting = true;
+            try {
+                const response = await fetch(`/api/batches/${this.batchToDelete.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to delete batch');
+                }
+                
+                this.showToast(`🗑️ Batch "${this.batchToDelete.name}" deleted permanently`, 'success');
+                this.closeDeleteModal();
+                await this.loadBatches();
+                
+            } catch (error) {
+                console.error('Failed to delete batch:', error);
+                this.showToast('❌ Failed to delete batch: ' + error.message, 'error');
+            } finally {
+                this.deleting = false;
+            }
+        },
+
+        closeModal() {
+            this.showAddModal = false;
+            this.showEditModal = false;
+            this.batchForm = {
+                id: null,
+                name: '',
+                class: '',
+                subject: ''
+            };
+        },
+
+        async archiveBatch(batch) {
+            // Use custom confirmation
+            if (window.utils && window.utils.confirmAction) {
+                window.utils.confirmAction(
+                    `Archive batch "${batch.name}" and all ${batch.currentStudents || 0} students in it? They will be moved to the Archive section and hidden from active views.`,
+                    async () => {
+                        await this.confirmArchiveBatch(batch);
+                    },
+                    null,
+                    {
+                        title: 'Archive Batch',
+                        confirmText: 'Archive',
+                        cancelText: 'Cancel',
+                        type: 'warning'
+                    }
+                );
+            } else {
+                // Fallback to native confirm
+                if (confirm(`Archive batch "${batch.name}" and all ${batch.currentStudents || 0} students? They will be hidden from active views but can be restored later.`)) {
+                    await this.confirmArchiveBatch(batch);
+                }
+            }
+        },
+
+        async confirmArchiveBatch(batch) {
+            try {
+                const response = await fetch(`/api/batches/${batch.id}/archive`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        reason: 'Archived by teacher'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to archive batch');
+                }
+
+                this.showToast(`📦 Batch "${batch.name}" and ${result.data.archived_students} students archived successfully`, 'success');
+                await this.loadBatches();
+
+            } catch (error) {
+                console.error('Failed to archive batch:', error);
+                this.showToast('Failed to archive batch: ' + error.message, 'error');
+            }
+        }
+    }
+}
+</script>

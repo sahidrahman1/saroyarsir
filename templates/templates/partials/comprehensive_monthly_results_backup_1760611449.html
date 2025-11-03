@@ -1,0 +1,1045 @@
+<!-- Comprehensive Monthly Results with Individual Exam Columns --><!-- Comprehensive Monthly Results with Individual Exam Columns -->
+
+<div x-data="comprehensiveResults()" x-init="init()"><div x-data="comprehensiveResults()" x-init="loadResults()">
+
+    <!-- Header -->    <!-- Header -->
+
+    <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg mb-6">    <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg mb-6">
+
+        <h2 class="text-2xl font-bold" x-text="examData?.title || 'Monthly Exam Results'"></h2>        <h2 class="text-2xl font-bold" x-text="examData?.title || 'Monthly Exam Results'"></h2>
+
+        <p class="text-blue-100 mt-2" x-text="`${examData?.batch_name || 'Batch'} - ${formatDateRange(examData?.start_date, examData?.end_date)}`"></p>        <p class="text-blue-100 mt-2" x-text="`${examData?.batch_name || 'Batch'} - ${formatDateRange(examData?.start_date, examData?.end_date)}`"></p>
+
+    </div>    </div>
+
+
+
+    <!-- Loading State -->    <!-- Loading State -->
+
+    <div x-show="loading" class="text-center py-8">    <div x-show="loading" class="text-center py-8">
+
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+
+        <p class="mt-2 text-gray-600">Loading comprehensive results...</p>        <p class="mt-2 text-gray-600">Loading comprehensive results...</p>
+
+    </div>    </div>
+
+
+
+    <!-- Error State -->    <!-- Error State -->
+
+    <div x-show="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">    <div x-show="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+
+        <p x-text="error"></p>        <p x-text="error"></p>
+
+        <button @click="retryLoad()" class="mt-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">    </div>
+
+            Retry
+
+        </button>    <!-- Roll Number Assignment Controls (Teachers Only) -->
+
+    </div>    <div x-show="isTeacher && !loading && !error" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+
+        <h3 class="font-semibold text-blue-800 mb-3">Roll Number Management</h3>
+
+    <!-- Roll Number Assignment Controls (Teachers Only) -->        <div class="flex flex-wrap gap-2 mb-3">
+
+    <div x-show="isTeacher && !loading && !error && rankings.length > 0" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">            <button @click="showRollNumberModal = true" 
+
+        <h3 class="font-semibold text-blue-800 mb-3">Roll Number Management</h3>                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+
+        <div class="flex flex-wrap gap-2 mb-3">                <i class="fas fa-edit mr-2"></i>Assign Roll Numbers
+
+            <button @click="showRollNumberModal = true"             </button>
+
+                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">            <button @click="autoAssignRollNumbers()" 
+
+                <i class="fas fa-edit mr-2"></i>Assign Roll Numbers                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">
+
+            </button>                <i class="fas fa-magic mr-2"></i>Auto-Assign by Rank
+
+            <button @click="autoAssignRollNumbers()"             </button>
+
+                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">            <button @click="generateRanking()" 
+
+                <i class="fas fa-magic mr-2"></i>Auto-Assign by Rank                    class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors">
+
+            </button>                <i class="fas fa-calculator mr-2"></i>Generate Final Rankings
+
+            <button @click="generateRanking()"             </button>
+
+                    class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors">        </div>
+
+                <i class="fas fa-calculator mr-2"></i>Generate Final Rankings    </div>
+
+            </button>
+
+        </div>    <!-- Results Table -->
+
+    </div>    <div x-show="!loading && !error && rankings.length > 0" class="bg-white rounded-lg shadow-lg overflow-hidden">
+
+        <div class="overflow-x-auto">
+
+    <!-- Results Table -->            <table class="min-w-full">
+
+    <div x-show="!loading && !error && rankings.length > 0" class="bg-white rounded-lg shadow-lg overflow-hidden">                <!-- Table Header -->
+
+        <div class="overflow-x-auto">                <thead class="bg-gray-50">
+
+            <table class="min-w-full">                    <tr>
+
+                <!-- Table Header -->                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 min-w-16">
+
+                <thead class="bg-gray-50">                            <div class="font-bold">Current</div>
+
+                    <tr>                            <div class="font-bold">Rank</div>
+
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 min-w-16">                        </th>
+
+                            <div class="font-bold">Current</div>                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-16 bg-gray-50 z-10 min-w-16">
+
+                            <div class="font-bold">Rank</div>                            <div class="font-bold">Previous</div>
+
+                        </th>                            <div class="font-bold">Rank</div>
+
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-16 bg-gray-50 z-10 min-w-16">                        </th>
+
+                            <div class="font-bold">Previous</div>                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-32 bg-gray-50 z-10 min-w-20">
+
+                            <div class="font-bold">Rank</div>                            Roll
+
+                        </th>                        </th>
+
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-32 bg-gray-50 z-10 min-w-20">                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-52 bg-gray-50 z-10 min-w-48">
+
+                            <div class="font-bold">Roll</div>                            <div>Student</div>
+
+                            <div class="font-bold">Number</div>                            <div class="text-xs text-gray-400">Phone</div>
+
+                        </th>                        </th>
+
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-52 bg-gray-50 z-10 min-w-48">                        
+
+                            <div class="font-bold">Student Name</div>                        <!-- Individual Exam Columns -->
+
+                        </th>                        <template x-for="exam in individualExams" :key="exam.id">
+
+                                                    <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-28 border-l border-gray-200">
+
+                        <!-- Individual Exam Columns -->                                <div class="font-semibold" x-text="exam.subject"></div>
+
+                        <template x-for="exam in individualExams" :key="exam.id">                                <div class="text-gray-400 text-xs" x-text="`Max: ${exam.marks}`"></div>
+
+                            <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-20">                                <div class="text-gray-400 text-xs" x-text="exam.title"></div>
+
+                                <div class="font-bold" x-text="exam.subject"></div>                            </th>
+
+                                <div class="text-xs font-normal" x-text="`(${exam.marks})`"></div>                        </template>
+
+                            </th>                        
+
+                        </template>                        <!-- Summary Columns -->
+
+                                                <th class="px-3 py-3 text-center text-xs font-medium text-blue-600 uppercase tracking-wider bg-blue-50 border-l-2 border-blue-300 min-w-24">
+
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-24">                            <div>Exam Total</div>
+
+                            <div class="font-bold">Exam</div>                            <div class="text-xs">Obtained/Max</div>
+
+                            <div class="font-bold">Total</div>                        </th>
+
+                        </th>                        <th class="px-3 py-3 text-center text-xs font-medium text-green-600 uppercase tracking-wider bg-green-50 min-w-24">
+
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-24">                            <div>Attendance</div>
+
+                            <div class="font-bold">Attendance</div>                            <div class="text-xs">Present/Max</div>
+
+                            <div class="font-bold">Marks</div>                        </th>
+
+                        </th>                        <th class="px-3 py-3 text-center text-xs font-medium text-purple-600 uppercase tracking-wider bg-purple-50 min-w-24">
+
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-24">                            <div>Grand Total</div>
+
+                            <div class="font-bold">Total</div>                            <div class="text-xs">Obtained/Max</div>
+
+                            <div class="font-bold">Obtained</div>                        </th>
+
+                        </th>                        <th class="px-3 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider bg-orange-50 min-w-24">
+
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-20">                            <div>Final</div>
+
+                            <div class="font-bold">%</div>                            <div>Percentage</div>
+
+                        </th>                        </th>
+
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-16">                        <th class="px-3 py-3 text-center text-xs font-medium text-red-600 uppercase tracking-wider bg-red-50 min-w-20">
+
+                            <div class="font-bold">Grade</div>                            Grade
+
+                        </th>                        </th>
+
+                    </tr>                        <th class="px-3 py-3 text-center text-xs font-medium text-indigo-600 uppercase tracking-wider bg-indigo-50 min-w-20">
+
+                </thead>                            GPA
+
+                                        </th>
+
+                <!-- Table Body -->                    </tr>
+
+                <tbody class="bg-white divide-y divide-gray-200">                </thead>
+
+                    <template x-for="(student, index) in rankings" :key="student.user_id">
+
+                        <tr class="hover:bg-gray-50" :class="{'bg-yellow-50': student.position <= 3}">                <!-- Table Body -->
+
+                            <!-- Current Rank -->                <tbody class="bg-white divide-y divide-gray-200">
+
+                            <td class="px-3 py-4 text-center sticky left-0 bg-white z-10">                    <template x-for="(rank, index) in rankings" :key="rank.user_id">
+
+                                <div class="flex items-center justify-center">                        <tr :class="getRankRowClass(rank.position)" class="hover:bg-gray-50">
+
+                                    <span class="inline-flex items-center justify-center h-8 w-8 rounded-full text-sm font-bold"                            <!-- Current Rank -->
+
+                                          :class="{                            <td class="px-3 py-4 whitespace-nowrap text-sm font-bold text-center sticky left-0 bg-white z-10 border-r border-gray-200">
+
+                                              'bg-yellow-100 text-yellow-800': student.position === 1,                                <span class="px-2 py-1 rounded-full text-lg font-bold" 
+
+                                              'bg-gray-100 text-gray-800': student.position === 2,                                      :class="getRankBadgeClass(rank.position)" 
+
+                                              'bg-orange-100 text-orange-800': student.position === 3,                                      x-text="rank.position"></span>
+
+                                              'bg-blue-100 text-blue-800': student.position > 3                            </td>
+
+                                          }"                            
+
+                                          x-text="student.position">                            <!-- Previous Rank with Change Indicator -->
+
+                                    </span>                            <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-center sticky left-16 bg-white z-10 border-r border-gray-200">
+
+                                </div>                                <div x-show="rank.previous_position" class="text-sm font-bold text-gray-700" x-text="rank.previous_position"></div>
+
+                            </td>                                <div x-show="!rank.previous_position" class="text-xs text-gray-400">New</div>
+
+                                                            <div x-show="rank.position_change !== null" class="text-xs mt-1">
+
+                            <!-- Previous Rank -->                                    <template x-if="rank.position_trend === 'up'">
+
+                            <td class="px-3 py-4 text-center sticky left-16 bg-white z-10">                                        <span class="text-green-600 font-semibold">
+
+                                <span class="text-sm text-gray-600" x-text="student.previous_position || '-'"></span>                                            <i class="fas fa-arrow-up"></i> +<span x-text="rank.position_change"></span>
+
+                            </td>                                        </span>
+
+                                                                </template>
+
+                            <!-- Roll Number -->                                    <template x-if="rank.position_trend === 'down'">
+
+                            <td class="px-3 py-4 text-center sticky left-32 bg-white z-10">                                        <span class="text-red-600 font-semibold">
+
+                                <span class="text-sm font-medium" x-text="student.roll_number || '-'"></span>                                            <i class="fas fa-arrow-down"></i> <span x-text="rank.position_change"></span>
+
+                            </td>                                        </span>
+
+                                                                </template>
+
+                            <!-- Student Name -->                                    <template x-if="rank.position_trend === 'same'">
+
+                            <td class="px-4 py-4 sticky left-52 bg-white z-10">                                        <span class="text-gray-500 font-semibold">
+
+                                <div class="flex items-center">                                            <i class="fas fa-equals"></i> Same
+
+                                    <div class="flex-shrink-0 h-8 w-8">                                        </span>
+
+                                        <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">                                    </template>
+
+                                            <span class="text-xs font-medium text-gray-600" x-text="student.first_name?.charAt(0) + student.last_name?.charAt(0)"></span>                                </div>
+
+                                        </div>                            </td>
+
+                                    </div>                            
+
+                                    <div class="ml-3">                            <!-- Roll Number -->
+
+                                        <div class="text-sm font-medium text-gray-900" x-text="student.first_name + ' ' + student.last_name"></div>                            <td class="px-3 py-4 whitespace-nowrap text-sm font-bold text-center sticky left-32 bg-white z-10 border-r border-gray-200">
+
+                                        <div class="text-xs text-gray-500" x-text="student.phone_number"></div>                                <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded font-bold" 
+
+                                    </div>                                      x-text="rank.roll_number || '-'"></span>
+
+                                </div>                            </td>
+
+                            </td>                            
+
+                                                        <!-- Student Name and Phone -->
+
+                            <!-- Individual Exam Marks -->                            <td class="px-4 py-4 whitespace-nowrap sticky left-52 bg-white z-10 border-r border-gray-200">
+
+                            <template x-for="exam in individualExams" :key="exam.id">                                <div class="text-sm font-medium text-gray-900" x-text="rank.student_name"></div>
+
+                                <td class="px-3 py-4 text-center">                                <div class="text-xs text-gray-500" x-text="rank.student_phone"></div>
+
+                                    <span class="text-sm" x-text="student.individual_marks?.[exam.id]?.marks_obtained || '-'"></span>                            </td>
+
+                                    <span class="text-xs text-gray-500" x-text="'/' + exam.marks"></span>                            
+
+                                </td>                            <!-- Individual Exam Marks -->
+
+                            </template>                            <template x-for="exam in individualExams" :key="exam.id">
+
+                                                            <td class="px-2 py-4 whitespace-nowrap text-sm text-center border-l border-gray-200">
+
+                            <!-- Exam Total -->                                    <template x-if="rank.individual_marks[exam.id]">
+
+                            <td class="px-3 py-4 text-center">                                        <div>
+
+                                <span class="text-sm font-medium" x-text="student.total_exam_marks"></span>                                            <template x-if="rank.individual_marks[exam.id].is_absent">
+
+                                <div class="text-xs text-gray-500" x-text="'/' + student.total_possible_marks"></div>                                                <div class="text-red-500 font-medium">
+
+                            </td>                                                    <div>Absent</div>
+
+                                                                                <div class="text-xs">0%</div>
+
+                            <!-- Attendance Marks -->                                                </div>
+
+                            <td class="px-3 py-4 text-center">                                            </template>
+
+                                <span class="text-sm" x-text="student.attendance_marks"></span>                                            <template x-if="!rank.individual_marks[exam.id].is_absent">
+
+                                <div class="text-xs text-gray-500" x-text="'/' + student.max_attendance_days"></div>                                                <div>
+
+                            </td>                                                    <div class="font-bold text-lg" x-text="rank.individual_marks[exam.id].marks_obtained"></div>
+
+                                                                                <div class="text-xs text-gray-500" x-text="`/${rank.individual_marks[exam.id].total_marks}`"></div>
+
+                            <!-- Total Obtained -->                                                    <div class="text-xs font-medium" 
+
+                            <td class="px-3 py-4 text-center">                                                         :class="getGradeColor(rank.individual_marks[exam.id].grade)"
+
+                                <span class="text-sm font-semibold" x-text="student.final_total"></span>                                                         x-text="`${rank.individual_marks[exam.id].percentage}%`"></div>
+
+                                <div class="text-xs text-gray-500" x-text="'/' + student.total_possible"></div>                                                    <div class="text-xs px-1 py-0.5 rounded font-medium" 
+
+                            </td>                                                         :class="getGradeColor(rank.individual_marks[exam.id].grade)"
+
+                                                                                     x-text="rank.individual_marks[exam.id].grade"></div>
+
+                            <!-- Percentage -->                                                </div>
+
+                            <td class="px-3 py-4 text-center">                                            </template>
+
+                                <span class="text-sm font-semibold" x-text="student.percentage.toFixed(1) + '%'"></span>                                        </div>
+
+                            </td>                                    </template>
+
+                                                                <template x-if="!rank.individual_marks[exam.id]">
+
+                            <!-- Grade -->                                        <span class="text-gray-400">-</span>
+
+                            <td class="px-3 py-4 text-center">                                    </template>
+
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"                                </td>
+
+                                      :class="{                            </template>
+
+                                          'bg-green-100 text-green-800': student.grade === 'A+' || student.grade === 'A',                            
+
+                                          'bg-blue-100 text-blue-800': student.grade === 'B+' || student.grade === 'B',                            <!-- Exam Total -->
+
+                                          'bg-yellow-100 text-yellow-800': student.grade === 'C+' || student.grade === 'C',                            <td class="px-3 py-4 whitespace-nowrap text-sm text-center font-medium text-blue-600 bg-blue-50 border-l-2 border-blue-300">
+
+                                          'bg-red-100 text-red-800': student.grade === 'D' || student.grade === 'F'                                <div class="font-bold text-lg" x-text="rank.total_exam_marks"></div>
+
+                                      }"                                <div class="text-xs text-gray-500" x-text="`/${rank.total_possible_marks}`"></div>
+
+                                      x-text="student.grade">                                <div class="text-xs text-gray-600" x-text="`Passed: ${rank.passed_exams}/${rank.total_exams}`"></div>
+
+                                </span>                            </td>
+
+                            </td>                            
+
+                        </tr>                            <!-- Attendance Marks -->
+
+                    </template>                            <td class="px-3 py-4 whitespace-nowrap text-sm text-center font-medium text-green-600 bg-green-50">
+
+                </tbody>                                <div class="font-bold text-lg" x-text="rank.attendance_marks"></div>
+
+            </table>                                <div class="text-xs text-gray-500" x-text="`/${rank.max_attendance_marks || rank.total_attendance_days}`"></div>
+
+        </div>                                <div class="text-xs font-medium" x-text="`${rank.attendance_percentage}%`"></div>
+
+    </div>                            </td>
+
+                            
+
+    <!-- No Results State -->                            <!-- Grand Total -->
+
+    <div x-show="!loading && !error && rankings.length === 0" class="text-center py-12">                            <td class="px-3 py-4 whitespace-nowrap text-sm text-center font-bold text-purple-600 bg-purple-50">
+
+        <i class="fas fa-chart-bar text-6xl text-gray-400 mb-4"></i>                                <div class="text-xl font-bold" x-text="rank.final_total"></div>
+
+        <p class="text-gray-600 mb-4">No rankings available</p>                                <div class="text-xs text-gray-500" x-text="`/${rank.total_possible}`"></div>
+
+        <button @click="generateRanking()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">                                <div class="text-xs text-gray-600">Total Obtained</div>
+
+            Generate Rankings                            </td>
+
+        </button>                            
+
+    </div>                            <!-- Final Percentage -->
+
+                            <td class="px-3 py-4 whitespace-nowrap text-sm text-center font-bold text-orange-600 bg-orange-50">
+
+    <!-- Roll Number Assignment Modal -->                                <div class="text-xl font-bold" x-text="`${rank.percentage}%`"></div>
+
+    <div x-show="showRollNumberModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"                                 <div class="text-xs text-gray-600">Final Score</div>
+
+         @click.self="showRollNumberModal = false">                            </td>
+
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">                            
+
+            <div class="mt-3">                            <!-- Grade -->
+
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Assign Roll Numbers</h3>                            <td class="px-3 py-4 whitespace-nowrap text-sm text-center font-medium bg-red-50">
+
+                                                <div class="px-2 py-1 rounded-full text-sm font-bold" 
+
+                <div class="max-h-96 overflow-y-auto">                                     :class="getGradeColor(rank.grade)" 
+
+                    <table class="min-w-full divide-y divide-gray-200">                                     x-text="rank.grade"></div>
+
+                        <thead class="bg-gray-50">                                <div class="text-xs text-gray-600 mt-1">Grade</div>
+
+                            <tr>                            </td>
+
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>                            
+
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>                            <!-- GPA -->
+
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roll Number</th>                            <td class="px-3 py-4 whitespace-nowrap text-sm text-center font-medium bg-indigo-50">
+
+                            </tr>                                <div class="text-lg font-bold text-indigo-800" x-text="rank.gpa"></div>
+
+                        </thead>                                <div class="text-xs text-gray-600">Overall</div>
+
+                        <tbody class="bg-white divide-y divide-gray-200">                                <div class="text-xs font-medium text-indigo-600" x-text="`E-GPA: ${rank.exam_gpa}`"></div>
+
+                            <template x-for="student in rankings" :key="student.user_id">                            </td>
+
+                                <tr>                        </tr>
+
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="student.position"></td>                    </template>
+
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="student.first_name + ' ' + student.last_name"></td>                </tbody>
+
+                                    <td class="px-6 py-4 whitespace-nowrap">            </table>
+
+                                        <input type="text"         </div>
+
+                                               :value="student.roll_number || ''"    </div>
+
+                                               @input="rollChanges[student.user_id] = $event.target.value"
+
+                                               class="border border-gray-300 rounded px-2 py-1 text-sm w-20"    <!-- No Results -->
+
+                                               placeholder="Roll #">    <div x-show="!loading && !error && rankings.length === 0" class="text-center py-8 text-gray-500">
+
+                                    </td>        <p>No results available for this monthly exam.</p>
+
+                                </tr>    </div>
+
+                            </template>
+
+                        </tbody>    <!-- Statistics Summary -->
+
+                    </table>    <div x-show="!loading && !error && rankings.length > 0" class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+
+                </div>        <div class="bg-blue-50 p-4 rounded-lg">
+
+                            <h4 class="font-medium text-blue-800">Total Students</h4>
+
+                <div class="flex justify-end space-x-3 mt-6">            <p class="text-2xl font-bold text-blue-600" x-text="rankings.length"></p>
+
+                    <button @click="showRollNumberModal = false"         </div>
+
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">        <div class="bg-green-50 p-4 rounded-lg">
+
+                        Cancel            <h4 class="font-medium text-green-800">Highest Score</h4>
+
+                    </button>            <p class="text-2xl font-bold text-green-600" x-text="rankings.length > 0 ? `${rankings[0].percentage}%` : 'N/A'"></p>
+
+                    <button @click="saveRollNumbers()"         </div>
+
+                            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700">        <div class="bg-yellow-50 p-4 rounded-lg">
+
+                        Save Roll Numbers            <h4 class="font-medium text-yellow-800">Average Score</h4>
+
+                    </button>            <p class="text-2xl font-bold text-yellow-600" x-text="getAveragePercentage()"></p>
+
+                </div>        </div>
+
+            </div>        <div class="bg-purple-50 p-4 rounded-lg">
+
+        </div>            <h4 class="font-medium text-purple-800">Pass Rate</h4>
+
+    </div>            <p class="text-2xl font-bold text-purple-600" x-text="getPassRate()"></p>
+
+</div>        </div>
+
+    </div>
+
+<script>
+
+function comprehensiveResults() {    <!-- Bonus Marks Modal -->
+
+    return {    <div x-show="showBonusModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" x-cloak>
+
+        loading: false,        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+
+        error: null,            <div class="mt-3">
+
+        examData: null,                <h3 class="text-lg font-medium text-gray-900 mb-4">Edit Bonus Marks</h3>
+
+        individualExams: [],                
+
+        rankings: [],                <div class="max-h-96 overflow-y-auto">
+
+        showRollNumberModal: false,                    <template x-for="rank in rankings" :key="rank.user_id">
+
+        rollChanges: {},                        <div class="flex items-center justify-between py-2 border-b">
+
+        isTeacher: window.userRole === 'TEACHER' || window.userRole === 'SUPER_USER',                            <span class="font-medium" x-text="rank.student_name"></span>
+
+        currentExamId: null,                            <input type="number" 
+
+                                   :value="rank.bonus_marks"
+
+        async init() {                                   @input="updateBonusMarks(rank.user_id, $event.target.value)"
+
+            await this.loadResults();                                   class="w-20 px-2 py-1 border rounded text-center"
+
+        },                                   min="0" max="100" step="0.5">
+
+                        </div>
+
+        async ensureExamSelected() {                    </template>
+
+            if (this.currentExamId) {                </div>
+
+                return this.currentExamId;                
+
+            }                <div class="flex justify-end space-x-3 mt-6">
+
+                    <button @click="showBonusModal = false" 
+
+            // Check if already set globally                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
+
+            if (window.currentMonthlyExamId) {                        Cancel
+
+                this.currentExamId = window.currentMonthlyExamId;                    </button>
+
+                return this.currentExamId;                    <button @click="saveBonusMarks()" 
+
+            }                            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+
+                        Save Changes
+
+            // Try to fetch the first available monthly exam                    </button>
+
+            try {                </div>
+
+                const response = await fetch('/api/monthly-exams');            </div>
+
+                if (!response.ok) {        </div>
+
+                    throw new Error('Failed to fetch monthly exams');    </div>
+
+                }</div>
+
+                
+
+                const data = await response.json();<script>
+
+                if (data.success && data.data?.monthly_exams?.length > 0) {function comprehensiveResults() {
+
+                    this.currentExamId = data.data.monthly_exams[0].id;    return {
+
+                    window.currentMonthlyExamId = this.currentExamId;        loading: true,
+
+                    console.log('Auto-selected monthly exam ID:', this.currentExamId);        error: null,
+
+                    return this.currentExamId;        examData: null,
+
+                } else {        individualExams: [],
+
+                    throw new Error('No monthly exams found. Please create a monthly exam first.');        rankings: [],
+
+                }        showRollNumberModal: false,
+
+            } catch (error) {        rollChanges: {},
+
+                throw new Error('Failed to fetch available monthly exams: ' + error.message);        isTeacher: window.userRole === 'TEACHER' || window.userRole === 'SUPER_USER',
+
+            }
+
+        },        async ensureExamSelected() {
+
+            if (!window.currentMonthlyExamId) {
+
+        async loadResults() {                try {
+
+            try {                    const monthlyExamsResponse = await fetch('/api/monthly-exams');
+
+                this.loading = true;                    const monthlyExamsData = await monthlyExamsResponse.json();
+
+                this.error = null;                    
+
+                                    if (monthlyExamsResponse.ok && monthlyExamsData.data?.monthly_exams?.length > 0) {
+
+                const examId = await this.ensureExamSelected();                        window.currentMonthlyExamId = monthlyExamsData.data.monthly_exams[0].id;
+
+                        console.log(`Auto-selected monthly exam ID: ${window.currentMonthlyExamId}`);
+
+                const response = await fetch(`/api/monthly-exams/${examId}/comprehensive-ranking`);                    } else {
+
+                if (!response.ok) {                        throw new Error('No monthly exams found');
+
+                    const errorData = await response.json();                    }
+
+                    throw new Error(errorData.message || 'Failed to load results');                } catch (error) {
+
+                }                    throw new Error('No monthly exam selected and failed to fetch available exams');
+
+                }
+
+                const data = await response.json();            }
+
+                if (!data.success) {            return window.currentMonthlyExamId;
+
+                    throw new Error(data.message || 'Failed to load results');        },
+
+                }
+
+        async loadResults() {
+
+                this.examData = data.data.monthly_exam;            try {
+
+                this.individualExams = data.data.individual_exams || [];                this.loading = true;
+
+                this.rankings = data.data.rankings || [];                this.error = null;
+
+                                
+
+                console.log('Loaded results:', {                const examId = await this.ensureExamSelected();
+
+                    exam: this.examData?.title,
+
+                    examsCount: this.individualExams.length,                const response = await fetch(`/api/monthly-exams/${examId}/comprehensive-ranking`);
+
+                    studentsCount: this.rankings.length                const data = await response.json();
+
+                });
+
+                                if (!response.ok) {
+
+            } catch (error) {                    throw new Error(data.message || 'Failed to load results');
+
+                console.error('Error loading comprehensive results:', error);                }
+
+                this.error = error.message;
+
+            } finally {                this.examData = data.data.monthly_exam;
+
+                this.loading = false;                this.individualExams = data.data.individual_exams || [];
+
+            }                this.rankings = data.data.rankings || [];
+
+        },                
+
+            } catch (error) {
+
+        async retryLoad() {                console.error('Error loading comprehensive results:', error);
+
+            this.currentExamId = null;                this.error = error.message;
+
+            window.currentMonthlyExamId = null;            } finally {
+
+            await this.loadResults();                this.loading = false;
+
+        },            }
+
+        },
+
+        async refreshResults() {
+
+            await this.loadResults();        async refreshResults() {
+
+        },            await this.loadResults();
+
+        },
+
+        async saveRollNumbers() {
+
+            try {        getRankRowClass(position) {
+
+                const examId = await this.ensureExamSelected();            if (position === 1) return 'bg-yellow-50 border-l-4 border-yellow-400';
+
+                const response = await fetch(`/api/monthly-exams/${examId}/assign-roll-numbers`, {            if (position === 2) return 'bg-gray-50 border-l-4 border-gray-400';
+
+                    method: 'POST',            if (position === 3) return 'bg-orange-50 border-l-4 border-orange-400';
+
+                    headers: {            return '';
+
+                        'Content-Type': 'application/json'        },
+
+                    },
+
+                    body: JSON.stringify({        getRankBadgeClass(position) {
+
+                        roll_assignments: this.rollChanges            if (position === 1) return 'text-yellow-800 bg-yellow-200';
+
+                    })            if (position === 2) return 'text-gray-800 bg-gray-200';
+
+                });            if (position === 3) return 'text-orange-800 bg-orange-200';
+
+            return 'text-blue-800 bg-blue-200';
+
+                if (!response.ok) {        },
+
+                    const errorData = await response.json();
+
+                    throw new Error(errorData.message || 'Failed to save roll numbers');        getGradeClass(grade) {
+
+                }            const gradeColors = {
+
+                'A+': 'text-green-600',
+
+                await this.refreshResults();                'A': 'text-green-500',
+
+                this.showRollNumberModal = false;                'A-': 'text-green-400',
+
+                this.rollChanges = {};                'B+': 'text-blue-600',
+
+                this.showAlert('Success', 'Roll numbers saved successfully', 'success');                'B': 'text-blue-500',
+
+                                'B-': 'text-blue-400',
+
+            } catch (error) {                'C+': 'text-yellow-600',
+
+                console.error('Error saving roll numbers:', error);                'C': 'text-yellow-500',
+
+                this.showAlert('Error', error.message, 'error');                'D': 'text-orange-500',
+
+            }                'F': 'text-red-500'
+
+        },            };
+
+            return gradeColors[grade] || 'text-gray-500';
+
+        async autoAssignRollNumbers() {        },
+
+            try {
+
+                const examId = await this.ensureExamSelected();        getAveragePercentage() {
+
+                const response = await fetch(`/api/monthly-exams/${examId}/auto-assign-roll-numbers`, {            if (this.rankings.length === 0) return 'N/A';
+
+                    method: 'POST',            const avg = this.rankings.reduce((sum, rank) => sum + rank.percentage, 0) / this.rankings.length;
+
+                    headers: {            return `${avg.toFixed(1)}%`;
+
+                        'Content-Type': 'application/json'        },
+
+                    }
+
+                });        getPassRate() {
+
+            if (this.rankings.length === 0) return 'N/A';
+
+                if (!response.ok) {            const passCount = this.rankings.filter(rank => rank.percentage >= 33).length;
+
+                    const errorData = await response.json();            const rate = (passCount / this.rankings.length) * 100;
+
+                    throw new Error(errorData.message || 'Failed to auto-assign roll numbers');            return `${rate.toFixed(1)}%`;
+
+                }        },
+
+
+
+                await this.refreshResults();        formatDateRange(startDate, endDate) {
+
+                this.showAlert('Success', 'Roll numbers auto-assigned successfully', 'success');            if (!startDate || !endDate) return '';
+
+                            const start = new Date(startDate).toLocaleDateString();
+
+            } catch (error) {            const end = new Date(endDate).toLocaleDateString();
+
+                console.error('Error auto-assigning roll numbers:', error);            return `${start} - ${end}`;
+
+                this.showAlert('Error', error.message, 'error');        },
+
+            }
+
+        },        getGradeColor(grade) {
+
+            const gradeColors = {
+
+        async generateRanking() {                'A+': 'bg-green-100 text-green-800',
+
+            try {                'A': 'bg-green-100 text-green-700',
+
+                const examId = await this.ensureExamSelected();                'A-': 'bg-green-100 text-green-600',
+
+                                'B+': 'bg-blue-100 text-blue-800',
+
+                this.showAlert('Info', 'Generating rankings...', 'info');                'B': 'bg-blue-100 text-blue-700',
+
+                                'B-': 'bg-blue-100 text-blue-600',
+
+                const response = await fetch(`/api/monthly-exams/${examId}/generate-ranking`, {                'C+': 'bg-yellow-100 text-yellow-800',
+
+                    method: 'POST',                'C': 'bg-yellow-100 text-yellow-700',
+
+                    headers: {                'D': 'bg-orange-100 text-orange-700',
+
+                        'Content-Type': 'application/json'                'F': 'bg-red-100 text-red-700'
+
+                    }            };
+
+                });            return gradeColors[grade] || 'bg-gray-100 text-gray-700';
+
+        },
+
+                if (!response.ok) {
+
+                    const errorData = await response.json();        updateRollNumber(userId, value) {
+
+                    throw new Error(errorData.message || 'Failed to generate ranking');            this.rollChanges[userId] = parseInt(value) || null;
+
+                }        },
+
+
+
+                const data = await response.json();        async saveRollNumbers() {
+
+                await this.refreshResults();            try {
+
+                                const rollAssignments = Object.entries(this.rollChanges).map(([userId, rollNumber]) => ({
+
+                this.showAlert('Success', `Final rankings generated and saved successfully! ${data.data.rankings_count || 0} students ranked.`, 'success');                    user_id: parseInt(userId),
+
+                                    roll_number: rollNumber
+
+            } catch (error) {                }));
+
+                console.error('Error generating ranking:', error);
+
+                this.showAlert('Error', error.message, 'error');                // Also include current roll numbers for students that weren't changed
+
+            }                this.rankings.forEach(rank => {
+
+        },                    if (!this.rollChanges[rank.user_id] && rank.roll_number) {
+
+                        rollAssignments.push({
+
+        formatDateRange(startDate, endDate) {                            user_id: rank.user_id,
+
+            if (!startDate || !endDate) return '';                            roll_number: rank.roll_number
+
+            const start = new Date(startDate).toLocaleDateString();                        });
+
+            const end = new Date(endDate).toLocaleDateString();                    }
+
+            return `${start} - ${end}`;                });
+
+        },
+
+                if (rollAssignments.length === 0) {
+
+        showAlert(title, message, type) {                    this.showRollNumberModal = false;
+
+            // Use the global utils.showAlert if available, otherwise console log                    return;
+
+            if (window.utils && window.utils.showAlert) {                }
+
+                window.utils.showAlert(message, type);
+
+            } else {                const examId = await this.ensureExamSelected();
+
+                console.log(`${title}: ${message}`);                const response = await fetch(`/api/monthly-exams/${examId}/assign-roll-numbers`, {
+
+                alert(`${title}: ${message}`);                    method: 'POST',
+
+            }                    headers: {
+
+        }                        'Content-Type': 'application/json'
+
+    }                    },
+
+}                    body: JSON.stringify({ roll_assignments: rollAssignments })
+
+</script>                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to save roll numbers');
+                }
+
+                this.showRollNumberModal = false;
+                this.rollChanges = {};
+                await this.refreshResults();
+                
+                showAlert('Success', 'Roll numbers assigned successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error saving roll numbers:', error);
+                showAlert('Error', error.message, 'error');
+            }
+        },
+
+        async autoAssignRollNumbers() {
+            try {
+                const examId = await this.ensureExamSelected();
+                const response = await fetch(`/api/monthly-exams/${examId}/auto-assign-roll-numbers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to auto-assign roll numbers');
+                }
+
+                await this.refreshResults();
+                showAlert('Success', 'Roll numbers auto-assigned successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error auto-assigning roll numbers:', error);
+                showAlert('Error', error.message, 'error');
+            }
+        },
+
+        async generateRanking() {
+            try {
+                const examId = await this.ensureExamSelected();
+                const response = await fetch(`/api/monthly-exams/${examId}/generate-ranking`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to generate ranking');
+                }
+
+                await this.refreshResults();
+                showAlert('Success', 'Monthly ranking generated successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error generating ranking:', error);
+                showAlert('Error', error.message, 'error');
+            }
+        }
+
+    };
+}
+
+</script>
+
+<!-- Roll Number Assignment Modal -->
+<div x-show="showRollNumberModal" 
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 z-50 overflow-y-auto"
+     aria-labelledby="roll-modal-title" 
+     role="dialog" 
+     aria-modal="true"
+     x-cloak>
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="showRollNumberModal = false"></div>
+        
+        <div class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full sm:p-6">
+            <div class="absolute top-0 right-0 pt-4 pr-4">
+                <button @click="showRollNumberModal = false" 
+                        class="bg-white rounded-md text-gray-400 hover:text-gray-600">
+                    <span class="sr-only">Close</span>
+                    <i class="fas fa-times h-6 w-6"></i>
+                </button>
+            </div>
+            
+            <div class="sm:flex sm:items-start">
+                <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="roll-modal-title">
+                        Assign Roll Numbers
+                    </h3>
+                    
+                    <div class="mt-4">
+                        <div class="max-h-96 overflow-y-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Current Rank
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Student Name
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Current Roll
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            New Roll Number
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <template x-for="rank in rankings" :key="rank.user_id">
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" 
+                                                x-text="rank.position"></td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" 
+                                                x-text="rank.student_name"></td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" 
+                                                x-text="rank.roll_number || '-'"></td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                <input type="number" 
+                                                       :value="rank.roll_number || rank.position"
+                                                       @input="updateRollNumber(rank.user_id, $event.target.value)"
+                                                       class="w-20 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button @click="saveRollNumbers()" 
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                    Save Roll Numbers
+                </button>
+                <button @click="showRollNumberModal = false" 
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+    }
+}
+</script>

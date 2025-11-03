@@ -1,0 +1,108 @@
+<!-- Super Admin SMS Management -->
+<div class="space-y-6">
+    <!-- SMS Balance Management -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">SMS Credit Management</h3>
+        
+        <!-- Add SMS Credits Form -->
+        <div class="bg-blue-50 rounded-lg p-4 mb-6">
+            <h4 class="font-medium text-blue-900 mb-3">Add SMS Credits to Teacher</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Select Teacher</label>
+                    <select x-model="selectedTeacher" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">-- Select Teacher --</option>
+                        <template x-for="teacher in teachers" :key="teacher.id">
+                            <option :value="teacher.id" x-text="`${teacher.name} (${teacher.phoneNumber}) - Balance: ${teacher.smsCount}`"></option>
+                        </template>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">SMS Credits to Add</label>
+                    <input type="number" x-model="creditsToAdd" min="1" max="10000" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Enter credits">
+                </div>
+                <div class="flex items-end">
+                    <button @click="addSMSCredits()" :disabled="!selectedTeacher || !creditsToAdd || adding"
+                            class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        <span x-show="!adding">Add Credits</span>
+                        <span x-show="adding">Adding...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Teachers List -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teacher</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SMS Balance</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <template x-for="teacher in teachers" :key="teacher.id">
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-chalkboard-teacher text-blue-600 text-sm"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-gray-900" x-text="teacher.name"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="teacher.phoneNumber"></td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                      :class="teacher.smsCount > 50 ? 'bg-green-100 text-green-800' : teacher.smsCount > 10 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'">
+                                    <span x-text="teacher.smsCount"></span> Credits
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="formatDate(teacher.lastLogin)"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button @click="quickAddCredits(teacher.id, 100)" 
+                                        class="text-blue-600 hover:text-blue-900 mr-3">+100</button>
+                                <button @click="quickAddCredits(teacher.id, 500)" 
+                                        class="text-green-600 hover:text-green-900 mr-3">+500</button>
+                                <button @click="quickAddCredits(teacher.id, 1000)" 
+                                        class="text-purple-600 hover:text-purple-900">+1000</button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Empty State -->
+        <div x-show="teachers.length === 0" class="text-center py-8">
+            <i class="fas fa-users text-gray-400 text-4xl mb-4"></i>
+            <p class="text-gray-500">No teachers found</p>
+        </div>
+    </div>
+
+    <!-- SMS Statistics -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">SMS Usage Statistics</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600" x-text="smsStats.totalCreditsDistributed || 0"></div>
+                <div class="text-sm text-blue-700">Total Credits Distributed</div>
+            </div>
+            <div class="text-center p-4 bg-green-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-600" x-text="smsStats.totalCreditsUsed || 0"></div>
+                <div class="text-sm text-green-700">Total Credits Used</div>
+            </div>
+            <div class="text-center p-4 bg-purple-50 rounded-lg">
+                <div class="text-2xl font-bold text-purple-600" x-text="smsStats.activeTeachers || 0"></div>
+                <div class="text-sm text-purple-700">Active Teachers</div>
+            </div>
+        </div>
+    </div>
+</div>
