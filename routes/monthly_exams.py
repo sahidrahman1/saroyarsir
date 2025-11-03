@@ -2,7 +2,7 @@
 Monthly Exam System Routes
 Ranking, GPA calculation, merit lists, and performance analytics
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from models import (db, MonthlyExam, IndividualExam, MonthlyMark, Batch, User, 
                    UserRole, Settings, SmsLog, SmsStatus, Attendance, AttendanceStatus, MonthlyRanking)
 from utils.auth import login_required, require_role, get_current_user
@@ -1539,6 +1539,7 @@ def delete_individual_exam(exam_id, individual_exam_id):
 def delete_monthly_exam(exam_id):
     """Delete a monthly exam period and all associated data"""
     try:
+        current_user = get_current_user()
         monthly_exam = MonthlyExam.query.get(exam_id)
         
         if not monthly_exam:
